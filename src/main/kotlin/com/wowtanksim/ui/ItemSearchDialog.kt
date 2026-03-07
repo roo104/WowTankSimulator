@@ -1,20 +1,20 @@
 package com.wowtanksim.ui
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.wowtanksim.model.*
 import com.wowtanksim.service.WowheadService
@@ -473,49 +473,121 @@ fun ItemSearchDialog(
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ItemDatabaseRow(option: ItemOption, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        if (option.item.iconUrl.isNotBlank()) {
-            IconImage(url = option.item.iconUrl, size = 24.dp)
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                option.item.name,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Medium,
-                color = option.item.quality.color,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            val statParts = mutableListOf<String>()
-            if (option.item.stamina > 0) statParts += "${option.item.stamina} Stam"
-            if (option.item.agility > 0) statParts += "${option.item.agility} Agi"
-            if (option.item.defenseRating > 0) statParts += "${option.item.defenseRating} Def"
-            if (option.item.dodgeRating > 0) statParts += "${option.item.dodgeRating} Dodge"
-            Text(
-                statParts.joinToString(" \u00B7 "),
-                style = MaterialTheme.typography.bodySmall,
-                color = AppColors.statSummary,
-                maxLines = 1,
-            )
-        }
-        Column(horizontalAlignment = Alignment.End) {
-            if (option.item.ilvl > 0) {
-                Text("${option.item.ilvl}", style = MaterialTheme.typography.labelSmall, color = AppColors.tooltipLabel)
+    val item = option.item
+    TooltipArea(
+        tooltip = {
+            Surface(
+                modifier = Modifier.wrapContentSize(),
+                shape = RoundedCornerShape(4.dp),
+                color = AppColors.tooltipBackground,
+                shadowElevation = 4.dp,
+            ) {
+                Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+                    Text(
+                        item.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = item.quality.color,
+                    )
+                    if (item.ilvl > 0) {
+                        Text(
+                            "Item Level ${item.ilvl}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColors.tooltipLabel,
+                        )
+                    }
+                    val stats = buildItemStatLines(item)
+                    if (stats.isNotEmpty()) {
+                        Text(
+                            stats,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White,
+                        )
+                    }
+                    if (item.socketTypes.isNotEmpty()) {
+                        Text(
+                            "Sockets: ${item.socketTypes.joinToString(", ") { it.name.lowercase().replaceFirstChar { c -> c.uppercase() } }}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColors.tooltipLabel,
+                        )
+                    }
+                    if (option.source.isNotBlank()) {
+                        Text(
+                            option.source,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColors.inactive,
+                        )
+                    }
+                }
             }
-            if (option.source.isNotBlank()) {
-                Text(option.source, style = MaterialTheme.typography.labelSmall, color = AppColors.inactive, maxLines = 1)
+        },
+        delayMillis = 300,
+        tooltipPlacement = TooltipPlacement.CursorPoint(offset = DpOffset(0.dp, 16.dp)),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (item.iconUrl.isNotBlank()) {
+                IconImage(url = item.iconUrl, size = 24.dp)
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    item.name,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    color = item.quality.color,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                val statParts = mutableListOf<String>()
+                if (item.stamina > 0) statParts += "${item.stamina} Stam"
+                if (item.agility > 0) statParts += "${item.agility} Agi"
+                if (item.defenseRating > 0) statParts += "${item.defenseRating} Def"
+                if (item.dodgeRating > 0) statParts += "${item.dodgeRating} Dodge"
+                Text(
+                    statParts.joinToString(" \u00B7 "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.statSummary,
+                    maxLines = 1,
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                if (item.ilvl > 0) {
+                    Text("${item.ilvl}", style = MaterialTheme.typography.labelSmall, color = AppColors.tooltipLabel)
+                }
+                if (option.source.isNotBlank()) {
+                    Text(option.source, style = MaterialTheme.typography.labelSmall, color = AppColors.inactive, maxLines = 1)
+                }
             }
         }
     }
+}
+
+private fun buildItemStatLines(item: Item): String {
+    val lines = mutableListOf<String>()
+    if (item.armor > 0) lines += "${item.armor} Armor"
+    if (item.stamina != 0) lines += "+${item.stamina} Stamina"
+    if (item.agility != 0) lines += "+${item.agility} Agility"
+    if (item.strength != 0) lines += "+${item.strength} Strength"
+    if (item.intellect != 0) lines += "+${item.intellect} Intellect"
+    if (item.spirit != 0) lines += "+${item.spirit} Spirit"
+    if (item.defenseRating != 0) lines += "+${item.defenseRating} Defense Rating"
+    if (item.dodgeRating != 0) lines += "+${item.dodgeRating} Dodge Rating"
+    if (item.resilienceRating != 0) lines += "+${item.resilienceRating} Resilience Rating"
+    if (item.hitRating != 0) lines += "+${item.hitRating} Hit Rating"
+    if (item.expertiseRating != 0) lines += "+${item.expertiseRating} Expertise Rating"
+    if (item.attackPower != 0) lines += "+${item.attackPower} Attack Power"
+    if (item.critRating != 0) lines += "+${item.critRating} Crit Rating"
+    if (item.hasteRating != 0) lines += "+${item.hasteRating} Haste Rating"
+    return lines.joinToString("\n")
 }
 
 private fun buildEnchantStatSummary(option: EnchantOption): String {

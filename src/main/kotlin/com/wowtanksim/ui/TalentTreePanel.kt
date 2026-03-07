@@ -213,6 +213,7 @@ private fun TalentNode(
     TooltipArea(
         tooltip = {
             Surface(
+                modifier = Modifier.wrapContentSize(),
                 shape = RoundedCornerShape(6.dp),
                 color = AppColors.tooltipBackground,
                 shadowElevation = 4.dp,

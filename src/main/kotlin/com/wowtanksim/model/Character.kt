@@ -1,5 +1,6 @@
 package com.wowtanksim.model
 
+import com.wowtanksim.service.SetBonusService
 import com.wowtanksim.service.SetBonusStat
 
 data class Character(
@@ -73,10 +74,18 @@ data class Character(
     }
 
     fun withItem(slot: EquipSlot, item: Item): Character {
-        return copy(equipment = equipment + (slot to item.copy(slot = slot)))
+        val newEquipment = equipment + (slot to item.copy(slot = slot))
+        return copy(
+            equipment = newEquipment,
+            activeSetBonuses = SetBonusService.calculateSetBonuses(newEquipment),
+        )
     }
 
     fun withoutItem(slot: EquipSlot): Character {
-        return copy(equipment = equipment - slot)
+        val newEquipment = equipment - slot
+        return copy(
+            equipment = newEquipment,
+            activeSetBonuses = SetBonusService.calculateSetBonuses(newEquipment),
+        )
     }
 }

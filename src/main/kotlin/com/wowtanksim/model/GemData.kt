@@ -36,6 +36,14 @@ object GemData {
             Gem(id = 24036, name = "Bold Living Ruby", icon = "inv_jewelcrafting_livingruby_03", color = GemColor.RED, strength = 8),
             note = "+8 Strength",
         ),
+        GemOption(
+            Gem(id = 31106, name = "Glinting Noble Topaz", icon = "inv_jewelcrafting_nobletopaz_03", color = GemColor.RED, hitRating = 4, agility = 4),
+            note = "+4 Hit / +4 Agi (Orange)",
+        ),
+        GemOption(
+            Gem(id = 30588, name = "Glinting Flame Spessarite", icon = "inv_misc_gem_flamespessarite_02", color = GemColor.RED, hitRating = 3, agility = 3),
+            note = "+3 Hit / +3 Agi (Orange, uncommon)",
+        ),
     )
 
     // Blue gems (and blue-matching green/purple)
@@ -91,6 +99,14 @@ object GemData {
         GemOption(
             Gem(id = 31103, name = "Nimble Fire Opal", icon = "inv_jewelcrafting_nobletopaz_03", color = GemColor.YELLOW, dodgeRating = 4, hitRating = 4),
             note = "+4 Dodge / +4 Hit (Orange)",
+        ),
+        GemOption(
+            Gem(id = 31106, name = "Glinting Noble Topaz", icon = "inv_jewelcrafting_nobletopaz_03", color = GemColor.YELLOW, hitRating = 4, agility = 4),
+            note = "+4 Hit / +4 Agi (Orange)",
+        ),
+        GemOption(
+            Gem(id = 30588, name = "Glinting Flame Spessarite", icon = "inv_misc_gem_flamespessarite_02", color = GemColor.YELLOW, hitRating = 3, agility = 3),
+            note = "+3 Hit / +3 Agi (Orange, uncommon)",
         ),
     )
 

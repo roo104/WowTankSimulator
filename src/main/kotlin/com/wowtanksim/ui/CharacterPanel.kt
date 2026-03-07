@@ -78,6 +78,7 @@ private fun DodgeStatRow(stats: TankStats, character: Character) {
     TooltipArea(
         tooltip = {
             Surface(
+                modifier = Modifier.wrapContentSize(),
                 shape = RoundedCornerShape(6.dp),
                 color = AppColors.tooltipBackground,
                 shadowElevation = 4.dp,
@@ -126,6 +127,7 @@ private fun DefenseStatRow(stats: TankStats, character: Character) {
     TooltipArea(
         tooltip = {
             Surface(
+                modifier = Modifier.wrapContentSize(),
                 shape = RoundedCornerShape(6.dp),
                 color = AppColors.tooltipBackground,
                 shadowElevation = 4.dp,
@@ -170,6 +172,7 @@ private fun ResilienceStatRow(stats: TankStats, character: Character) {
     TooltipArea(
         tooltip = {
             Surface(
+                modifier = Modifier.wrapContentSize(),
                 shape = RoundedCornerShape(6.dp),
                 color = AppColors.tooltipBackground,
                 shadowElevation = 4.dp,

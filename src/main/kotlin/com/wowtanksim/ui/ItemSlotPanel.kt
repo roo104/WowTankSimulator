@@ -182,6 +182,7 @@ private fun SlotRow(
         TooltipArea(
             tooltip = {
                 Surface(
+                    modifier = Modifier.wrapContentSize(),
                     shape = RoundedCornerShape(4.dp),
                     color = AppColors.tooltipBackground,
                     shadowElevation = 4.dp,
@@ -270,6 +271,7 @@ private fun StatSummaryWithTooltip(item: Item) {
         TooltipArea(
             tooltip = {
                 Surface(
+                    modifier = Modifier.wrapContentSize(),
                     shape = RoundedCornerShape(4.dp),
                     color = AppColors.tooltipBackground,
                     shadowElevation = 4.dp,
@@ -308,6 +310,7 @@ private fun GemWithTooltip(gem: Gem, content: @Composable () -> Unit) {
     TooltipArea(
         tooltip = {
             Surface(
+                modifier = Modifier.wrapContentSize(),
                 shape = RoundedCornerShape(4.dp),
                 color = AppColors.tooltipBackground,
                 shadowElevation = 4.dp,

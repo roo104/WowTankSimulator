@@ -30,7 +30,7 @@ object ItemDatabase {
             source = "Leatherworking",
         ),
         ItemOption(
-            Item(id = 28796, name = "Stag-Helm of Malorne", icon = "inv_helmet_15", quality = ItemQuality.EPIC, ilvl = 120, stamina = 46, agility = 28, strength = 23, armor = 323, defenseRating = 18, socketTypes = listOf(GemColor.META, GemColor.YELLOW), setId = 650),
+            Item(id = 29098, name = "Stag-Helm of Malorne", icon = "inv_helmet_15", quality = ItemQuality.EPIC, ilvl = 120, stamina = 30, agility = 33, strength = 41, armor = 490, socketTypes = listOf(GemColor.META, GemColor.YELLOW), setId = 640),
             source = "T4 - Prince Malchezaar",
         ),
         ItemOption(
@@ -68,7 +68,7 @@ object ItemDatabase {
 
     private val shoulderItems = listOf(
         ItemOption(
-            Item(id = 28797, name = "Shoulderguards of Malorne", icon = "inv_shoulder_25", quality = ItemQuality.EPIC, ilvl = 120, stamina = 37, agility = 24, strength = 22, armor = 298, defenseRating = 16, setId = 650),
+            Item(id = 29100, name = "Shoulderguards of Malorne", icon = "inv_shoulder_25", quality = ItemQuality.EPIC, ilvl = 120, stamina = 25, agility = 27, strength = 33, armor = 410, socketTypes = listOf(GemColor.BLUE, GemColor.BLUE), setId = 640),
             source = "T4 - High King Maulgar",
         ),
         ItemOption(
@@ -106,7 +106,7 @@ object ItemDatabase {
             source = "Shattered Halls",
         ),
         ItemOption(
-            Item(id = 28830, name = "Breastplate of Malorne", icon = "inv_chest_leather_05", quality = ItemQuality.EPIC, ilvl = 120, stamina = 46, agility = 28, strength = 31, armor = 392, defenseRating = 22, socketTypes = listOf(GemColor.RED, GemColor.YELLOW, GemColor.BLUE), setId = 650),
+            Item(id = 29096, name = "Breastplate of Malorne", icon = "inv_chest_leather_05", quality = ItemQuality.EPIC, ilvl = 120, stamina = 36, agility = 34, strength = 33, armor = 659, socketTypes = listOf(GemColor.RED, GemColor.BLUE, GemColor.YELLOW), setId = 640),
             source = "T4 - Magtheridon",
         ),
         ItemOption(
@@ -140,7 +140,7 @@ object ItemDatabase {
 
     private val handsItems = listOf(
         ItemOption(
-            Item(id = 28799, name = "Handguards of Malorne", icon = "inv_gauntlets_29", quality = ItemQuality.EPIC, ilvl = 120, stamina = 36, agility = 23, strength = 22, armor = 268, defenseRating = 18, socketTypes = listOf(GemColor.RED), setId = 650),
+            Item(id = 29097, name = "Gauntlets of Malorne", icon = "inv_gauntlets_29", quality = ItemQuality.EPIC, ilvl = 120, stamina = 28, agility = 24, strength = 32, armor = 475, setId = 640),
             source = "T4 - The Curator",
         ),
         ItemOption(
@@ -178,7 +178,7 @@ object ItemDatabase {
             source = "Karazhan - Moroes",
         ),
         ItemOption(
-            Item(id = 28798, name = "Legguards of Malorne", icon = "inv_pants_leather_05", quality = ItemQuality.EPIC, ilvl = 120, stamina = 48, agility = 28, strength = 27, armor = 355, defenseRating = 20, socketTypes = listOf(GemColor.RED, GemColor.YELLOW, GemColor.BLUE), setId = 650),
+            Item(id = 29099, name = "Greaves of Malorne", icon = "inv_pants_leather_05", quality = ItemQuality.EPIC, ilvl = 120, stamina = 39, agility = 32, strength = 42, armor = 640, setId = 640),
             source = "T4 - Gruul",
         ),
         ItemOption(
@@ -243,7 +243,7 @@ object ItemDatabase {
             source = "Karazhan - Maiden",
         ),
         ItemOption(
-            Item(id = 28830, name = "Moroes' Lucky Pocket Watch", icon = "inv_misc_pocketwatch_01", quality = ItemQuality.EPIC, ilvl = 115, dodgeRating = 38),
+            Item(id = 28528, name = "Moroes' Lucky Pocket Watch", icon = "inv_misc_pocketwatch_01", quality = ItemQuality.EPIC, ilvl = 115, dodgeRating = 38),
             source = "Karazhan - Moroes",
         ),
         ItemOption(
