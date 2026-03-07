@@ -8,9 +8,11 @@ data class Character(
     val region: String = "eu",
     val level: Int = 70,
     val equipment: Map<EquipSlot, Item> = emptyMap(),
-    val survivalOfTheFittest: Int = 3, // 0-3 talent points
+    val talents: TalentState = TalentState(),
     val activeSetBonuses: List<SetBonusStat> = emptyList(),
 ) {
+    val survivalOfTheFittest: Int get() = talents.survivalOfTheFittest
+
     fun aggregateStats(): TankStats {
         var sta = 0; var agi = 0; var str = 0
         var leatherArmor = 0; var otherArmor = 0
@@ -36,8 +38,8 @@ data class Character(
             critRating += item.effectiveCritRating
         }
 
-        // Add set bonus stats
-        for (bonus in activeSetBonuses) {
+        // Add set bonus stats (only active bonuses contribute)
+        for (bonus in activeSetBonuses.filter { it.isActive }) {
             sta += bonus.stamina
             agi += bonus.agility
             str += bonus.strength
@@ -64,7 +66,9 @@ data class Character(
             expertiseRating = expRating,
             attackPower = ap,
             critRating = critRating,
-            survivalOfTheFittest = survivalOfTheFittest,
+            survivalOfTheFittest = talents.survivalOfTheFittest,
+            thickHide = talents.thickHide,
+            heartOfTheWild = talents.heartOfTheWild,
         )
     }
 

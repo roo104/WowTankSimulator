@@ -1,6 +1,7 @@
 package com.wowtanksim.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -34,6 +35,10 @@ fun ItemSearchDialog(
     var enchantIdText by remember { mutableStateOf("") }
     var fetchedEnchant by remember { mutableStateOf<Enchant?>(null) }
     var enchantLoading by remember { mutableStateOf(false) }
+    var enchantExpanded by remember { mutableStateOf(false) }
+    var useManualEnchant by remember { mutableStateOf(false) }
+    val enchantOptions = remember(slot) { EnchantData.enchantOptionsForSlot(slot) }
+    val slotHasEnchants = enchantOptions.isNotEmpty()
 
     // Gem state: one field per socket
     var gemIdTexts by remember { mutableStateOf(listOf<String>()) }
@@ -169,39 +174,104 @@ fun ItemSearchDialog(
                             }
 
                             // Enchant section
-                            Divider(modifier = Modifier.padding(vertical = 4.dp))
-                            Text("Enchant", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                OutlinedTextField(
-                                    value = enchantIdText,
-                                    onValueChange = { enchantIdText = it.filter { c -> c.isDigit() } },
-                                    label = { Text("Enchant Spell ID") },
-                                    singleLine = true,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                Button(
-                                    onClick = {
-                                        val eid = enchantIdText.toIntOrNull()
-                                        if (eid != null && eid > 0) {
-                                            scope.launch {
-                                                enchantLoading = true
-                                                WowheadService.fetchEnchant(eid)
-                                                    .onSuccess { fetchedEnchant = it }
-                                                    .onFailure { error = "Failed to fetch enchant: ${it.message}" }
-                                                enchantLoading = false
+                            if (slotHasEnchants || useManualEnchant) {
+                                Divider(modifier = Modifier.padding(vertical = 4.dp))
+                                Text("Enchant", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+
+                                if (!useManualEnchant && slotHasEnchants) {
+                                    // Dropdown selector
+                                    ExposedDropdownMenuBox(
+                                        expanded = enchantExpanded,
+                                        onExpandedChange = { enchantExpanded = it },
+                                    ) {
+                                        OutlinedTextField(
+                                            value = fetchedEnchant?.name ?: "None",
+                                            onValueChange = {},
+                                            readOnly = true,
+                                            singleLine = true,
+                                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = enchantExpanded) },
+                                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                        )
+                                        ExposedDropdownMenu(
+                                            expanded = enchantExpanded,
+                                            onDismissRequest = { enchantExpanded = false },
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = { Text("None") },
+                                                onClick = {
+                                                    fetchedEnchant = null
+                                                    enchantExpanded = false
+                                                },
+                                            )
+                                            enchantOptions.forEach { option ->
+                                                DropdownMenuItem(
+                                                    text = {
+                                                        Column {
+                                                            Text(option.enchant.name, fontWeight = FontWeight.Medium)
+                                                            Text(
+                                                                buildEnchantStatSummary(option),
+                                                                style = MaterialTheme.typography.bodySmall,
+                                                                color = Color(0xFF4CAF50),
+                                                            )
+                                                        }
+                                                    },
+                                                    onClick = {
+                                                        fetchedEnchant = option.enchant
+                                                        enchantExpanded = false
+                                                    },
+                                                )
                                             }
                                         }
-                                    },
-                                    enabled = !enchantLoading && enchantIdText.isNotBlank(),
-                                ) {
-                                    Text(if (enchantLoading) "..." else "Lookup")
+                                    }
+                                    Text(
+                                        "Enter ID Manually",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.clickable { useManualEnchant = true }.padding(top = 4.dp),
+                                    )
+                                } else {
+                                    // Manual enchant ID entry
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        OutlinedTextField(
+                                            value = enchantIdText,
+                                            onValueChange = { enchantIdText = it.filter { c -> c.isDigit() } },
+                                            label = { Text("Enchant Spell ID") },
+                                            singleLine = true,
+                                            modifier = Modifier.weight(1f),
+                                        )
+                                        Button(
+                                            onClick = {
+                                                val eid = enchantIdText.toIntOrNull()
+                                                if (eid != null && eid > 0) {
+                                                    scope.launch {
+                                                        enchantLoading = true
+                                                        WowheadService.fetchEnchant(eid)
+                                                            .onSuccess { fetchedEnchant = it }
+                                                            .onFailure { error = "Failed to fetch enchant: ${it.message}" }
+                                                        enchantLoading = false
+                                                    }
+                                                }
+                                            },
+                                            enabled = !enchantLoading && enchantIdText.isNotBlank(),
+                                        ) {
+                                            Text(if (enchantLoading) "..." else "Lookup")
+                                        }
+                                    }
+                                    fetchedEnchant?.let { ench ->
+                                        Text(ench.name, style = MaterialTheme.typography.bodySmall, color = Color(0xFF00CC00))
+                                    }
+                                    if (slotHasEnchants) {
+                                        Text(
+                                            "Choose from List",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.clickable { useManualEnchant = false }.padding(top = 4.dp),
+                                        )
+                                    }
                                 }
-                            }
-                            fetchedEnchant?.let { ench ->
-                                Text(ench.name, style = MaterialTheme.typography.bodySmall, color = Color(0xFF00CC00))
                             }
 
                             // Show stat diff vs current
@@ -249,6 +319,27 @@ private fun gemColorToUiColor(color: GemColor): Color = when (color) {
     GemColor.BLUE -> Color(0xFF4488FF)
     GemColor.YELLOW -> Color(0xFFFFDD00)
     GemColor.META -> Color(0xFFCCCCCC)
+}
+
+private fun buildEnchantStatSummary(option: EnchantOption): String {
+    val e = option.enchant
+    val parts = mutableListOf<String>()
+    if (e.stamina != 0) parts += "+${e.stamina} Sta"
+    if (e.agility != 0) parts += "+${e.agility} Agi"
+    if (e.strength != 0) parts += "+${e.strength} Str"
+    if (e.intellect != 0) parts += "+${e.intellect} Int"
+    if (e.spirit != 0) parts += "+${e.spirit} Spi"
+    if (e.armor != 0) parts += "+${e.armor} Armor"
+    if (e.defenseRating != 0) parts += "+${e.defenseRating} Def"
+    if (e.dodgeRating != 0) parts += "+${e.dodgeRating} Dodge"
+    if (e.resilienceRating != 0) parts += "+${e.resilienceRating} Resil"
+    if (e.hitRating != 0) parts += "+${e.hitRating} Hit"
+    if (e.expertiseRating != 0) parts += "+${e.expertiseRating} Exp"
+    if (e.attackPower != 0) parts += "+${e.attackPower} AP"
+    if (e.critRating != 0) parts += "+${e.critRating} Crit"
+    if (e.hasteRating != 0) parts += "+${e.hasteRating} Haste"
+    val stats = parts.joinToString(", ")
+    return if (option.note != null) "$stats  (${option.note})" else stats
 }
 
 @Composable

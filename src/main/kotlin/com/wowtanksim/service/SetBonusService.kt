@@ -7,6 +7,7 @@ data class SetBonusStat(
     val setName: String,
     val piecesRequired: Int,
     val description: String,
+    val isActive: Boolean = true,
     val stamina: Int = 0,
     val agility: Int = 0,
     val strength: Int = 0,
@@ -69,7 +70,12 @@ object SetBonusService {
     )
 
     /**
-     * Count equipped pieces per setId and return applicable bonus stats.
+     * Get all set bonus definitions for a given setId.
+     */
+    fun getSetBonuses(setId: Int): List<SetBonusStat> = setDefinitions[setId] ?: emptyList()
+
+    /**
+     * Count equipped pieces per setId and return all bonus stats with isActive flag.
      */
     fun calculateSetBonuses(equipment: Map<EquipSlot, Item>): List<SetBonusStat> {
         // Count pieces per set
@@ -80,17 +86,15 @@ object SetBonusService {
             }
         }
 
-        val activeBonuses = mutableListOf<SetBonusStat>()
+        val allBonuses = mutableListOf<SetBonusStat>()
         for ((setId, count) in setCounts) {
             val bonuses = setDefinitions[setId] ?: continue
             for (bonus in bonuses) {
-                if (count >= bonus.piecesRequired) {
-                    activeBonuses.add(bonus)
-                }
+                allBonuses.add(bonus.copy(isActive = count >= bonus.piecesRequired))
             }
         }
 
-        return activeBonuses
+        return allBonuses
     }
 
     /**

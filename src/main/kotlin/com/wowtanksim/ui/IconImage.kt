@@ -57,7 +57,7 @@ fun IconImage(url: String, size: Dp = 28.dp, modifier: Modifier = Modifier) {
                 null
             }
         }
-        imageCache[url] = bitmap
+        bitmap?.let { imageCache[url] = it }
         loading = false
     }
 

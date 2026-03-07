@@ -1,9 +1,6 @@
 package com.wowtanksim.service
 
-import com.wowtanksim.model.Character
-import com.wowtanksim.model.Enchant
-import com.wowtanksim.model.EquipSlot
-import com.wowtanksim.model.Item
+import com.wowtanksim.model.*
 import com.wowtanksim.util.DebugLog
 import com.wowtanksim.util.StatParser
 import io.ktor.client.*
@@ -87,7 +84,8 @@ object ArmoryService {
                     )
                 }
                 val retryBody = retryResponse.bodyAsText()
-                return parseEquipmentResponse(name, realm, region, retryBody)
+                val talents = fetchTalents(region, realmSlug, nameSlug, namespace, retryToken)
+                return parseEquipmentResponse(name, realm, region, retryBody, talents)
             }
             if (status != 200) {
                 DebugLog.error("Battle.net API returned HTTP $status")
@@ -95,7 +93,8 @@ object ArmoryService {
                 return Result.failure(RuntimeException("Battle.net API returned HTTP $status"))
             }
 
-            parseEquipmentResponse(name, realm, region, body)
+            val talents = fetchTalents(region, realmSlug, nameSlug, namespace, token)
+            parseEquipmentResponse(name, realm, region, body, talents)
         } catch (e: Exception) {
             DebugLog.error("Battle.net API fetch failed", e)
             Result.failure(e)
@@ -146,11 +145,106 @@ object ArmoryService {
         }
     }
 
+    /** Build a lookup from (treeName, row, col) -> talentId for matching Battle.net data. */
+    private val talentByPosition: Map<Triple<String, Int, Int>, String> by lazy {
+        TalentTrees.allTrees.flatMap { tree ->
+            tree.talents.map { def ->
+                Triple(tree.name, def.row, def.col) to def.id
+            }
+        }.toMap()
+    }
+
+    /** Map Battle.net tree index to our tree name. Druid tree order: Balance=0, Feral=1, Restoration=2. */
+    private val treeIndexToName = mapOf(0 to "Balance", 1 to "Feral Combat", 2 to "Restoration")
+
+    private suspend fun fetchTalents(
+        region: String,
+        realmSlug: String,
+        nameSlug: String,
+        namespace: String,
+        token: String,
+    ): TalentState {
+        return try {
+            val url = "https://$region.api.blizzard.com/profile/wow/character/$realmSlug/$nameSlug/specializations" +
+                "?namespace=$namespace&locale=en_US"
+            DebugLog.info("Fetching talents: $url")
+            val response = client.get(url) {
+                header("Authorization", "Bearer $token")
+            }
+            if (response.status.value != 200) {
+                DebugLog.error("Talent fetch returned HTTP ${response.status.value}, using default talents")
+                return TalentState()
+            }
+            val body = response.bodyAsText()
+            parseTalentResponse(body)
+        } catch (e: Exception) {
+            DebugLog.error("Failed to fetch talents, using default", e)
+            TalentState()
+        }
+    }
+
+    private fun parseTalentResponse(body: String): TalentState {
+        val root = json.parseToJsonElement(body).jsonObject
+        val specs = root["specializations"]?.jsonArray
+        if (specs.isNullOrEmpty()) {
+            DebugLog.info("No specializations in talent response")
+            return TalentState()
+        }
+
+        // Use the first (active) specialization
+        val spec = specs[0].jsonObject
+        val talents = spec["talents"]?.jsonArray
+        if (talents.isNullOrEmpty()) {
+            DebugLog.info("No talents in specialization")
+            return TalentState()
+        }
+
+        val points = mutableMapOf<String, Int>()
+        for (entry in talents) {
+            val obj = entry.jsonObject
+            val tierIndex = obj["tier_index"]?.jsonPrimitive?.int ?: continue
+            val columnIndex = obj["column_index"]?.jsonPrimitive?.int ?: continue
+            val rank = obj["rank"]?.jsonPrimitive?.int ?: continue
+
+            // Determine tree from the talent data
+            val talentName = obj["talent"]?.jsonObject?.get("name")?.jsonPrimitive?.content ?: ""
+
+            // Try to find by matching tree index in the specialization groups
+            val treeIndex = obj["tree_index"]?.jsonPrimitive?.int
+            val treeName = if (treeIndex != null) {
+                treeIndexToName[treeIndex]
+            } else {
+                // Fallback: try all trees to match by row/col
+                null
+            }
+
+            val talentId = if (treeName != null) {
+                talentByPosition[Triple(treeName, tierIndex, columnIndex)]
+            } else {
+                // Try matching across all trees
+                treeIndexToName.values.firstNotNullOfOrNull { name ->
+                    talentByPosition[Triple(name, tierIndex, columnIndex)]
+                }
+            }
+
+            if (talentId != null && rank > 0) {
+                points[talentId] = rank
+                DebugLog.info("  Talent: $talentName ($talentId) = $rank")
+            } else {
+                DebugLog.info("  Unmatched talent: $talentName (tier=$tierIndex, col=$columnIndex, rank=$rank)")
+            }
+        }
+
+        DebugLog.info("Parsed ${points.size} talents from Battle.net")
+        return TalentState(points = points)
+    }
+
     private suspend fun parseEquipmentResponse(
         name: String,
         realm: String,
         region: String,
         body: String,
+        talents: TalentState = TalentState(),
     ): Result<Character> {
         val root = json.parseToJsonElement(body).jsonObject
         val equippedItems = root["equipped_items"]?.jsonArray
@@ -267,7 +361,7 @@ object ArmoryService {
             )
         }
 
-        // Parse active set bonuses — deduplicate by set ID + required_count
+        // Parse all set bonuses (active and inactive) — deduplicate by set name + required_count
         val seenSetBonuses = mutableSetOf<String>()
         val activeSetBonuses = mutableListOf<SetBonusStat>()
         for (entry in equippedItems) {
@@ -277,7 +371,6 @@ object ArmoryService {
             for (effect in effects) {
                 val effectObj = effect.jsonObject
                 val isActive = effectObj["is_active"]?.jsonPrimitive?.boolean ?: false
-                if (!isActive) continue
                 val requiredCount = effectObj["required_count"]?.jsonPrimitive?.int ?: 0
                 val displayString = effectObj["display_string"]?.jsonPrimitive?.content ?: ""
                 val key = "$setName:$requiredCount"
@@ -292,6 +385,7 @@ object ArmoryService {
                     setName = setName,
                     piecesRequired = requiredCount,
                     description = description,
+                    isActive = isActive,
                     stamina = sb.stamina,
                     agility = sb.agility,
                     strength = sb.strength,
@@ -315,6 +409,7 @@ object ArmoryService {
                 realm = realm,
                 region = region,
                 equipment = equipment,
+                talents = talents,
                 activeSetBonuses = activeSetBonuses,
             )
         )

@@ -20,6 +20,7 @@ fun App() {
     var importName by remember { mutableStateOf("tauroo") }
     var importError by remember { mutableStateOf<String?>(null) }
     var isImporting by remember { mutableStateOf(false) }
+    var selectedTab by remember { mutableStateOf(0) }
     val scope = rememberCoroutineScope()
 
     MaterialTheme(
@@ -74,54 +75,63 @@ fun App() {
                     }
                 }
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
 
-                // SotF talent selector
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        "Survival of the Fittest:",
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(top = 12.dp),
-                    )
-                    (0..3).forEach { pts ->
-                        FilterChip(
-                            selected = character.survivalOfTheFittest == pts,
-                            onClick = { character = character.copy(survivalOfTheFittest = pts) },
-                            label = { Text("$pts/3") },
+                // Tab row
+                val tabTitles = listOf("Equipment", "Talents")
+                TabRow(selectedTabIndex = selectedTab) {
+                    tabTitles.forEachIndexed { index, title ->
+                        Tab(
+                            selected = selectedTab == index,
+                            onClick = { selectedTab = index },
+                            text = { Text(title) },
                         )
                     }
                 }
 
                 Spacer(Modifier.height(12.dp))
 
-                // Main content: left = items, right = stats + crit immunity
-                Row(
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    // Left: equipment slots
-                    ItemSlotPanel(
-                        equipment = character.equipment,
-                        onSlotClick = { slot ->
-                            selectedSlot = slot
-                            showItemDialog = true
-                        },
-                        onRemoveItem = { slot ->
-                            character = character.withoutItem(slot)
-                        },
-                        modifier = Modifier.weight(1f),
-                    )
+                when (selectedTab) {
+                    0 -> {
+                        // Equipment tab: items + stats
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            // Left: equipment slots
+                            ItemSlotPanel(
+                                equipment = character.equipment,
+                                setBonuses = character.activeSetBonuses,
+                                onSlotClick = { slot ->
+                                    selectedSlot = slot
+                                    showItemDialog = true
+                                },
+                                onRemoveItem = { slot ->
+                                    character = character.withoutItem(slot)
+                                },
+                                modifier = Modifier.weight(1f),
+                            )
 
-                    // Right: stats + crit immunity
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        val stats = character.aggregateStats()
-                        CritImmunityPanel(stats = stats, sotfPoints = character.survivalOfTheFittest)
-                        CharacterPanel(stats = stats, character = character)
+                            // Right: stats + crit immunity
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                val stats = character.aggregateStats()
+                                CritImmunityPanel(stats = stats, sotfPoints = character.survivalOfTheFittest)
+                                CharacterPanel(stats = stats, character = character)
+                            }
+                        }
+                    }
+                    1 -> {
+                        // Talents tab
+                        TalentTreePanel(
+                            talentState = character.talents,
+                            onTalentStateChange = { newTalents ->
+                                character = character.copy(talents = newTalents)
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                 }
 

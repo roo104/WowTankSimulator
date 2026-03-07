@@ -58,13 +58,14 @@ fun CharacterPanel(
 
             // Set bonuses
             if (character.activeSetBonuses.isNotEmpty()) {
-                val bonusDescs = character.activeSetBonuses.map { "${it.setName} (${it.piecesRequired}pc): ${it.description}" }
-                if (bonusDescs.isNotEmpty()) {
-                    Spacer(Modifier.height(8.dp))
-                    Text("Set Bonuses", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-                    for (desc in bonusDescs) {
-                        Text(desc, style = MaterialTheme.typography.bodySmall, color = Color(0xFF00CC00))
-                    }
+                Spacer(Modifier.height(8.dp))
+                Text("Set Bonuses", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                for (bonus in character.activeSetBonuses) {
+                    Text(
+                        "${bonus.setName} (${bonus.piecesRequired}pc): ${bonus.description}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (bonus.isActive) Color(0xFF00CC00) else Color(0xFF808080),
+                    )
                 }
             }
         }
@@ -77,7 +78,7 @@ private fun HealthStatRow(stats: TankStats) {
     val totalRawSta = TankStats.BASE_STAMINA + stats.stamina
     val sotfMult = 1.0 + stats.survivalOfTheFittest * 0.01
     val direBearMult = 1.25
-    val hotwMult = 1.20
+    val hotwMult = 1.0 + stats.heartOfTheWild.coerceIn(0, 5) * 0.04
     val taurenMult = 1.05
     val bearSta = stats.bearFormStamina
     val bonusSta = (bearSta - 20).coerceAtLeast(0)
@@ -100,7 +101,7 @@ private fun HealthStatRow(stats: TankStats) {
                     TooltipLine("Total Raw Stamina", "$totalRawSta")
                     Divider(color = Color(0xFF333355))
                     TooltipLine("  Dire Bear Form (×%.2f)".format(direBearMult), "")
-                    TooltipLine("  Heart of the Wild (×%.2f)".format(hotwMult), "")
+                    TooltipLine("  Heart of the Wild ${stats.heartOfTheWild}/5 (×%.2f)".format(hotwMult), "")
                     TooltipLine("  Survival of the Fittest ${stats.survivalOfTheFittest}/3 (×%.2f)".format(sotfMult), "")
                     TooltipLine("  Tauren Endurance (×%.2f)".format(taurenMult), "")
                     TooltipLine("Bear Form Stamina", "$bearSta")
@@ -127,7 +128,8 @@ private fun HealthStatRow(stats: TankStats) {
 private fun ArmorStatRow(stats: TankStats) {
     val bearAgi = stats.bearFormAgility
     val agiArmor = bearAgi * 2
-    val thickHided = stats.leatherArmor * 11 / 10
+    val thickHideMult = 1.0 + listOf(0.0, 0.04, 0.07, 0.10)[stats.thickHide.coerceIn(0, 3)]
+    val thickHided = (stats.leatherArmor * thickHideMult).toInt()
     val totalItemArmor = thickHided + stats.otherArmor
     val bearItemArmor = totalItemArmor * 5
 
@@ -145,7 +147,7 @@ private fun ArmorStatRow(stats: TankStats) {
                     Text("Armor Breakdown", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
                     Divider(color = Color(0xFF333355))
                     TooltipLine("Leather Armor (gear)", "${stats.leatherArmor}")
-                    TooltipLine("  Thick Hide 3/3 (×1.1)", "$thickHided")
+                    TooltipLine("  Thick Hide ${stats.thickHide}/3 (×%.2f)".format(thickHideMult), "$thickHided")
                     TooltipLine("Other Armor (gear)", "${stats.otherArmor}")
                     TooltipLine("Total Item Armor", "$totalItemArmor")
                     Divider(color = Color(0xFF333355))

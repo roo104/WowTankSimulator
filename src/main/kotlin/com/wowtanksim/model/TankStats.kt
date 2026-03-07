@@ -14,6 +14,8 @@ data class TankStats(
     val attackPower: Int = 0,
     val critRating: Int = 0,
     val survivalOfTheFittest: Int = 3,
+    val thickHide: Int = 3,
+    val heartOfTheWild: Int = 5,
 ) {
     // Survival of the Fittest: +1% all attributes per point
     private val sotfMult: Double get() = 1.0 + survivalOfTheFittest * 0.01
@@ -39,7 +41,8 @@ data class TankStats(
     // Base armor from agility: 2 armor per agility (not multiplied by bear form or Thick Hide)
     val bearFormArmor: Int get() {
         val agiArmor = bearFormAgility * 2
-        val thickHided = leatherArmor * 11 / 10           // Thick Hide 3/3: integer +10%
+        val thickHideMult = 1.0 + listOf(0.0, 0.04, 0.07, 0.10)[thickHide.coerceIn(0, 3)]
+        val thickHided = (leatherArmor * thickHideMult).toInt()
         val totalItemArmor = thickHided + otherArmor
         val bearItemArmor = totalItemArmor * 5             // Dire Bear Form: integer 5x
         return agiArmor + bearItemArmor
@@ -57,7 +60,7 @@ data class TankStats(
     val bearFormStamina: Int get() {
         val totalRawSta = BASE_STAMINA + stamina
         val direBearMult = 1.25
-        val hotwMult = 1.20
+        val hotwMult = 1.0 + heartOfTheWild.coerceIn(0, 5) * 0.04
         val taurenMult = 1.05
         return (totalRawSta * direBearMult * hotwMult * sotfMult * taurenMult).toInt()
     }
