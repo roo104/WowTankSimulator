@@ -48,8 +48,14 @@ object ArmoryService {
     private var accessToken: String? = null
     private var tokenExpiry: Long = 0
 
-    suspend fun fetchCharacter(region: String, realm: String, name: String): Result<Character> {
+    suspend fun fetchCharacter(
+        region: String,
+        realm: String,
+        name: String,
+        onProgress: (String) -> Unit = {},
+    ): Result<Character> {
         return try {
+            onProgress("Authenticating...")
             val config = BattleNetConfig.load().getOrElse { return Result.failure(it) }
             val token = getAccessToken(config).getOrElse { return Result.failure(it) }
 
@@ -59,6 +65,7 @@ object ArmoryService {
             val url = "https://$region.api.blizzard.com/profile/wow/character/$realmSlug/$nameSlug/equipment" +
                 "?namespace=$namespace&locale=en_US"
 
+            onProgress("Fetching equipment...")
             DebugLog.info("Fetching Battle.net API: $url")
 
             val response = client.get(url) {
@@ -84,7 +91,9 @@ object ArmoryService {
                     )
                 }
                 val retryBody = retryResponse.bodyAsText()
+                onProgress("Loading talents...")
                 val talents = fetchTalents(region, realmSlug, nameSlug, namespace, retryToken)
+                onProgress("Resolving items...")
                 return parseEquipmentResponse(name, realm, region, retryBody, talents)
             }
             if (status != 200) {
@@ -93,7 +102,9 @@ object ArmoryService {
                 return Result.failure(RuntimeException("Battle.net API returned HTTP $status"))
             }
 
+            onProgress("Loading talents...")
             val talents = fetchTalents(region, realmSlug, nameSlug, namespace, token)
+            onProgress("Resolving items...")
             parseEquipmentResponse(name, realm, region, body, talents)
         } catch (e: Exception) {
             DebugLog.error("Battle.net API fetch failed", e)

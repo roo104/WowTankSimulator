@@ -3,6 +3,8 @@ package com.wowtanksim.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -11,8 +13,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.wowtanksim.model.*
 import com.wowtanksim.service.WowheadService
@@ -25,10 +27,12 @@ fun ItemSearchDialog(
     onDismiss: () -> Unit,
     onItemSelected: (EquipSlot, Item) -> Unit,
 ) {
-    var itemIdText by remember { mutableStateOf("") }
     var fetchedItem by remember { mutableStateOf<Item?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
+    var useManualItemEntry by remember { mutableStateOf(false) }
+    var itemIdText by remember { mutableStateOf("") }
+    var searchQuery by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
 
     // Enchant state
@@ -40,16 +44,23 @@ fun ItemSearchDialog(
     val enchantOptions = remember(slot) { EnchantData.enchantOptionsForSlot(slot) }
     val slotHasEnchants = enchantOptions.isNotEmpty()
 
-    // Gem state: one field per socket
-    var gemIdTexts by remember { mutableStateOf(listOf<String>()) }
+    // Gem state: one entry per socket
     var fetchedGems by remember { mutableStateOf(listOf<Gem?>()) }
+    var gemExpanded by remember { mutableStateOf(listOf<Boolean>()) }
+    var useManualGem by remember { mutableStateOf(listOf<Boolean>()) }
+    var gemIdTexts by remember { mutableStateOf(listOf<String>()) }
     var gemLoading by remember { mutableStateOf(false) }
 
-    // When item is fetched, reset gem slots to match socket count
+    // Database items for slot
+    val databaseItems = remember(slot) { ItemDatabase.itemsForSlot(slot).sortedByDescending { it.item.ilvl } }
+
+    // When item is fetched, reset gem slots
     LaunchedEffect(fetchedItem) {
         fetchedItem?.let { item ->
-            gemIdTexts = List(item.numSockets) { "" }
             fetchedGems = List(item.numSockets) { null }
+            gemExpanded = List(item.numSockets) { false }
+            useManualGem = List(item.numSockets) { false }
+            gemIdTexts = List(item.numSockets) { "" }
         }
     }
 
@@ -59,39 +70,88 @@ fun ItemSearchDialog(
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.verticalScroll(rememberScrollState()),
+                modifier = Modifier.verticalScroll(rememberScrollState()).widthIn(min = 400.dp),
             ) {
                 if (currentItem != null) {
                     Text("Current: ${currentItem.name}", style = MaterialTheme.typography.bodySmall, color = currentItem.quality.color)
                 }
 
-                // Item lookup
-                OutlinedTextField(
-                    value = itemIdText,
-                    onValueChange = { itemIdText = it.filter { c -> c.isDigit() } },
-                    label = { Text("Wowhead Item ID") },
-                    placeholder = { Text("e.g. 28825") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                if (!useManualItemEntry) {
+                    // Database item search
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        label = { Text("Search items...") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
 
-                Button(
-                    onClick = {
-                        val id = itemIdText.toIntOrNull()
-                        if (id != null && id > 0) {
-                            scope.launch {
-                                isLoading = true
-                                error = null
-                                WowheadService.fetchItem(id)
-                                    .onSuccess { fetchedItem = it; fetchedEnchant = null }
-                                    .onFailure { error = "Failed to fetch: ${it.message}" }
-                                isLoading = false
+                    val filteredItems = if (searchQuery.isBlank()) databaseItems
+                    else databaseItems.filter { it.item.name.contains(searchQuery, ignoreCase = true) || it.source.contains(searchQuery, ignoreCase = true) }
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp),
+                        colors = CardDefaults.cardColors(containerColor = AppColors.tooltipBackground),
+                    ) {
+                        if (filteredItems.isEmpty()) {
+                            Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                                Text("No items found", style = MaterialTheme.typography.bodySmall, color = AppColors.inactive)
+                            }
+                        } else {
+                            LazyColumn {
+                                items(filteredItems) { option ->
+                                    ItemDatabaseRow(option) {
+                                        fetchedItem = option.item.copy(slot = slot)
+                                        fetchedEnchant = null
+                                        error = null
+                                    }
+                                }
                             }
                         }
-                    },
-                    enabled = !isLoading && itemIdText.isNotBlank(),
-                ) {
-                    Text(if (isLoading) "Fetching..." else "Lookup Item")
+                    }
+
+                    Text(
+                        "Enter Wowhead ID Manually",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.clickable { useManualItemEntry = true }.padding(top = 4.dp),
+                    )
+                } else {
+                    // Manual Wowhead ID entry
+                    OutlinedTextField(
+                        value = itemIdText,
+                        onValueChange = { itemIdText = it.filter { c -> c.isDigit() } },
+                        label = { Text("Wowhead Item ID") },
+                        placeholder = { Text("e.g. 28825") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+
+                    Button(
+                        onClick = {
+                            val id = itemIdText.toIntOrNull()
+                            if (id != null && id > 0) {
+                                scope.launch {
+                                    isLoading = true
+                                    error = null
+                                    WowheadService.fetchItem(id)
+                                        .onSuccess { fetchedItem = it; fetchedEnchant = null }
+                                        .onFailure { error = "Failed to fetch: ${it.message}" }
+                                    isLoading = false
+                                }
+                            }
+                        },
+                        enabled = !isLoading && itemIdText.isNotBlank(),
+                    ) {
+                        Text(if (isLoading) "Fetching..." else "Lookup Item")
+                    }
+
+                    Text(
+                        "Choose from List",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.clickable { useManualItemEntry = false }.padding(top = 4.dp),
+                    )
                 }
 
                 error?.let {
@@ -101,10 +161,20 @@ fun ItemSearchDialog(
                 fetchedItem?.let { item ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A2E)),
+                        colors = CardDefaults.cardColors(containerColor = AppColors.tooltipBackground),
                     ) {
                         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(item.name, fontWeight = FontWeight.Bold, color = item.quality.color)
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                if (item.iconUrl.isNotBlank()) {
+                                    IconImage(url = item.iconUrl, size = 32.dp)
+                                }
+                                Column {
+                                    Text(item.name, fontWeight = FontWeight.Bold, color = item.quality.color)
+                                    if (item.ilvl > 0) {
+                                        Text("Item Level ${item.ilvl}", style = MaterialTheme.typography.bodySmall, color = AppColors.tooltipLabel)
+                                    }
+                                }
+                            }
                             if (item.stamina > 0) Text("Stamina: ${item.stamina}", style = MaterialTheme.typography.bodySmall)
                             if (item.agility > 0) Text("Agility: ${item.agility}", style = MaterialTheme.typography.bodySmall)
                             if (item.strength > 0) Text("Strength: ${item.strength}", style = MaterialTheme.typography.bodySmall)
@@ -116,11 +186,15 @@ fun ItemSearchDialog(
                             if (item.critRating > 0) Text("Crit Rating: ${item.critRating}", style = MaterialTheme.typography.bodySmall)
                             if (item.attackPower > 0) Text("Attack Power: ${item.attackPower}", style = MaterialTheme.typography.bodySmall)
 
-                            // Socket display
+                            // Socket display with gem dropdowns
                             if (item.numSockets > 0) {
                                 Divider(modifier = Modifier.padding(vertical = 4.dp))
                                 Text("Sockets", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                                 for (i in item.socketTypes.indices) {
+                                    val socketColor = item.socketTypes[i]
+                                    val gemOptions = remember(socketColor) { GemData.gemOptionsForColor(socketColor) }
+                                    val isManual = useManualGem.getOrElse(i) { false }
+
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -129,47 +203,134 @@ fun ItemSearchDialog(
                                             modifier = Modifier
                                                 .size(12.dp)
                                                 .clip(CircleShape)
-                                                .background(gemColorToUiColor(item.socketTypes[i]))
+                                                .background(AppColors.gemSocketColor(socketColor))
                                         )
-                                        OutlinedTextField(
-                                            value = gemIdTexts.getOrElse(i) { "" },
-                                            onValueChange = { newVal ->
-                                                gemIdTexts = gemIdTexts.toMutableList().also {
-                                                    while (it.size <= i) it.add("")
-                                                    it[i] = newVal.filter { c -> c.isDigit() }
+
+                                        if (!isManual && gemOptions.isNotEmpty()) {
+                                            // Dropdown gem selector
+                                            val expanded = gemExpanded.getOrElse(i) { false }
+                                            ExposedDropdownMenuBox(
+                                                expanded = expanded,
+                                                onExpandedChange = { newVal ->
+                                                    gemExpanded = gemExpanded.toMutableList().also {
+                                                        while (it.size <= i) it.add(false)
+                                                        it[i] = newVal
+                                                    }
+                                                },
+                                                modifier = Modifier.weight(1f),
+                                            ) {
+                                                OutlinedTextField(
+                                                    value = fetchedGems.getOrNull(i)?.name ?: "None",
+                                                    onValueChange = {},
+                                                    readOnly = true,
+                                                    singleLine = true,
+                                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                                                    modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                                    textStyle = MaterialTheme.typography.bodySmall,
+                                                )
+                                                ExposedDropdownMenu(
+                                                    expanded = expanded,
+                                                    onDismissRequest = {
+                                                        gemExpanded = gemExpanded.toMutableList().also { it[i] = false }
+                                                    },
+                                                ) {
+                                                    DropdownMenuItem(
+                                                        text = { Text("None") },
+                                                        onClick = {
+                                                            fetchedGems = fetchedGems.toMutableList().also { it[i] = null }
+                                                            gemExpanded = gemExpanded.toMutableList().also { it[i] = false }
+                                                        },
+                                                    )
+                                                    gemOptions.forEach { option ->
+                                                        DropdownMenuItem(
+                                                            text = {
+                                                                Column {
+                                                                    Text(option.gem.name, fontWeight = FontWeight.Medium, style = MaterialTheme.typography.bodySmall)
+                                                                    option.note?.let {
+                                                                        Text(it, style = MaterialTheme.typography.bodySmall, color = AppColors.positive)
+                                                                    }
+                                                                }
+                                                            },
+                                                            onClick = {
+                                                                fetchedGems = fetchedGems.toMutableList().also { it[i] = option.gem }
+                                                                gemExpanded = gemExpanded.toMutableList().also { it[i] = false }
+                                                            },
+                                                        )
+                                                    }
                                                 }
-                                            },
-                                            label = { Text("Gem ID (${item.socketTypes[i].name.lowercase()})") },
-                                            singleLine = true,
-                                            modifier = Modifier.weight(1f),
-                                        )
-                                        val gem = fetchedGems.getOrNull(i)
-                                        if (gem != null) {
-                                            if (gem.iconUrl.isNotBlank()) {
-                                                IconImage(url = gem.iconUrl, size = 18.dp)
-                                                Spacer(Modifier.width(4.dp))
                                             }
-                                            Text(gem.name, style = MaterialTheme.typography.bodySmall, color = Color(0xFF00CC00))
+                                            Text(
+                                                "ID",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.clickable {
+                                                    useManualGem = useManualGem.toMutableList().also {
+                                                        while (it.size <= i) it.add(false)
+                                                        it[i] = true
+                                                    }
+                                                },
+                                            )
+                                        } else {
+                                            // Manual gem ID entry
+                                            OutlinedTextField(
+                                                value = gemIdTexts.getOrElse(i) { "" },
+                                                onValueChange = { newVal ->
+                                                    gemIdTexts = gemIdTexts.toMutableList().also {
+                                                        while (it.size <= i) it.add("")
+                                                        it[i] = newVal.filter { c -> c.isDigit() }
+                                                    }
+                                                },
+                                                label = { Text("Gem ID (${socketColor.name.lowercase()})") },
+                                                singleLine = true,
+                                                modifier = Modifier.weight(1f),
+                                                textStyle = MaterialTheme.typography.bodySmall,
+                                            )
+                                            val gem = fetchedGems.getOrNull(i)
+                                            if (gem != null) {
+                                                if (gem.iconUrl.isNotBlank()) {
+                                                    IconImage(url = gem.iconUrl, size = 18.dp)
+                                                }
+                                                Text(gem.name, style = MaterialTheme.typography.bodySmall, color = AppColors.enchantGreen)
+                                            }
+                                            if (gemOptions.isNotEmpty()) {
+                                                Text(
+                                                    "List",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.clickable {
+                                                        useManualGem = useManualGem.toMutableList().also {
+                                                            while (it.size <= i) it.add(false)
+                                                            it[i] = false
+                                                        }
+                                                    },
+                                                )
+                                            }
                                         }
                                     }
                                 }
-                                Button(
-                                    onClick = {
-                                        scope.launch {
-                                            gemLoading = true
-                                            val newGems = gemIdTexts.map { idStr ->
-                                                val gid = idStr.toIntOrNull()
-                                                if (gid != null && gid > 0) {
-                                                    WowheadService.fetchGem(gid).getOrNull()
-                                                } else null
+                                // Lookup button for manual gem IDs
+                                if (useManualGem.any { it }) {
+                                    Button(
+                                        onClick = {
+                                            scope.launch {
+                                                gemLoading = true
+                                                val newGems = fetchedGems.toMutableList()
+                                                for (idx in gemIdTexts.indices) {
+                                                    if (useManualGem.getOrElse(idx) { false }) {
+                                                        val gid = gemIdTexts.getOrElse(idx) { "" }.toIntOrNull()
+                                                        if (gid != null && gid > 0) {
+                                                            newGems[idx] = WowheadService.fetchGem(gid).getOrNull()
+                                                        }
+                                                    }
+                                                }
+                                                fetchedGems = newGems
+                                                gemLoading = false
                                             }
-                                            fetchedGems = newGems
-                                            gemLoading = false
-                                        }
-                                    },
-                                    enabled = !gemLoading && gemIdTexts.any { it.isNotBlank() },
-                                ) {
-                                    Text(if (gemLoading) "Looking up..." else "Lookup Gems")
+                                        },
+                                        enabled = !gemLoading && gemIdTexts.any { it.isNotBlank() },
+                                    ) {
+                                        Text(if (gemLoading) "Looking up..." else "Lookup Gems")
+                                    }
                                 }
                             }
 
@@ -179,7 +340,6 @@ fun ItemSearchDialog(
                                 Text("Enchant", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
 
                                 if (!useManualEnchant && slotHasEnchants) {
-                                    // Dropdown selector
                                     ExposedDropdownMenuBox(
                                         expanded = enchantExpanded,
                                         onExpandedChange = { enchantExpanded = it },
@@ -211,7 +371,7 @@ fun ItemSearchDialog(
                                                             Text(
                                                                 buildEnchantStatSummary(option),
                                                                 style = MaterialTheme.typography.bodySmall,
-                                                                color = Color(0xFF4CAF50),
+                                                                color = AppColors.positive,
                                                             )
                                                         }
                                                     },
@@ -230,7 +390,6 @@ fun ItemSearchDialog(
                                         modifier = Modifier.clickable { useManualEnchant = true }.padding(top = 4.dp),
                                     )
                                 } else {
-                                    // Manual enchant ID entry
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -261,7 +420,7 @@ fun ItemSearchDialog(
                                         }
                                     }
                                     fetchedEnchant?.let { ench ->
-                                        Text(ench.name, style = MaterialTheme.typography.bodySmall, color = Color(0xFF00CC00))
+                                        Text(ench.name, style = MaterialTheme.typography.bodySmall, color = AppColors.enchantGreen)
                                     }
                                     if (slotHasEnchants) {
                                         Text(
@@ -274,7 +433,7 @@ fun ItemSearchDialog(
                                 }
                             }
 
-                            // Show stat diff vs current
+                            // Stat diff vs current
                             if (currentItem != null) {
                                 Divider(modifier = Modifier.padding(vertical = 4.dp))
                                 Text("Stat Difference:", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
@@ -314,11 +473,49 @@ fun ItemSearchDialog(
     )
 }
 
-private fun gemColorToUiColor(color: GemColor): Color = when (color) {
-    GemColor.RED -> Color(0xFFFF4444)
-    GemColor.BLUE -> Color(0xFF4488FF)
-    GemColor.YELLOW -> Color(0xFFFFDD00)
-    GemColor.META -> Color(0xFFCCCCCC)
+@Composable
+private fun ItemDatabaseRow(option: ItemOption, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (option.item.iconUrl.isNotBlank()) {
+            IconImage(url = option.item.iconUrl, size = 24.dp)
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                option.item.name,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                color = option.item.quality.color,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            val statParts = mutableListOf<String>()
+            if (option.item.stamina > 0) statParts += "${option.item.stamina} Stam"
+            if (option.item.agility > 0) statParts += "${option.item.agility} Agi"
+            if (option.item.defenseRating > 0) statParts += "${option.item.defenseRating} Def"
+            if (option.item.dodgeRating > 0) statParts += "${option.item.dodgeRating} Dodge"
+            Text(
+                statParts.joinToString(" \u00B7 "),
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.statSummary,
+                maxLines = 1,
+            )
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            if (option.item.ilvl > 0) {
+                Text("${option.item.ilvl}", style = MaterialTheme.typography.labelSmall, color = AppColors.tooltipLabel)
+            }
+            if (option.source.isNotBlank()) {
+                Text(option.source, style = MaterialTheme.typography.labelSmall, color = AppColors.inactive, maxLines = 1)
+            }
+        }
+    }
 }
 
 private fun buildEnchantStatSummary(option: EnchantOption): String {
@@ -345,7 +542,7 @@ private fun buildEnchantStatSummary(option: EnchantOption): String {
 @Composable
 private fun showDiff(label: String, diff: Int) {
     if (diff != 0) {
-        val color = if (diff > 0) Color(0xFF4CAF50) else Color(0xFFF44336)
+        val color = if (diff > 0) AppColors.positive else AppColors.negative
         val prefix = if (diff > 0) "+" else ""
         Text(
             "$label: $prefix$diff",

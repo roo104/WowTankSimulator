@@ -56,7 +56,7 @@ fun DebugConsole(modifier: Modifier = Modifier) {
         if (expanded) {
             Surface(
                 modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp),
-                color = Color(0xFF1A1A1A),
+                color = AppColors.debugBackground,
                 shape = MaterialTheme.shapes.small,
                 tonalElevation = 2.dp,
             ) {
@@ -78,8 +78,8 @@ fun DebugConsole(modifier: Modifier = Modifier) {
                                 Text(
                                     text = entry.message,
                                     color = when (entry.level) {
-                                        DebugLog.Level.INFO -> Color(0xFF8EC07C)
-                                        DebugLog.Level.ERROR -> Color(0xFFFB4934)
+                                        DebugLog.Level.INFO -> AppColors.debugInfo
+                                        DebugLog.Level.ERROR -> AppColors.debugError
                                     },
                                     fontFamily = FontFamily.Monospace,
                                     fontSize = 12.sp,

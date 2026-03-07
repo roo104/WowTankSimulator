@@ -36,10 +36,10 @@ fun CharacterPanel(
             HealthStatRow(stats)
             ArmorStatRow(stats)
             StatRow("Damage Reduction", "%.1f%%".format(stats.armorDamageReduction))
-            StatRow("Dodge", "%.2f%%".format(stats.totalDodgePercent))
-            StatRow("Defense Skill", "%.1f".format(stats.defenseSkill))
+            DodgeStatRow(stats, character)
+            DefenseStatRow(stats, character)
             StatRow("Defense Rating", "${stats.defenseRating}")
-            StatRow("Resilience Rating", "${stats.resilienceRating}")
+            ResilienceStatRow(stats, character)
             StatRow("Dodge Rating", "${stats.dodgeRating}")
 
             Spacer(Modifier.height(8.dp))
@@ -64,10 +64,144 @@ fun CharacterPanel(
                     Text(
                         "${bonus.setName} (${bonus.piecesRequired}pc): ${bonus.description}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (bonus.isActive) Color(0xFF00CC00) else Color(0xFF808080),
+                        color = if (bonus.isActive) AppColors.enchantGreen else AppColors.inactive,
                     )
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun DodgeStatRow(stats: TankStats, character: Character) {
+    TooltipArea(
+        tooltip = {
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = AppColors.tooltipBackground,
+                shadowElevation = 4.dp,
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp).widthIn(max = 300.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text("Dodge Breakdown", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                    Divider(color = AppColors.tooltipDivider)
+                    TooltipLine("Base Dodge", "%.2f%%".format(stats.baseDodge))
+                    TooltipLine("Agility (${stats.bearFormAgility} / 14.71)", "%.2f%%".format(stats.dodgeFromAgility))
+                    TooltipLine("Dodge Rating (${stats.dodgeRating} / 18.92)", "%.2f%%".format(stats.dodgeFromRating))
+                    Divider(color = AppColors.tooltipDivider)
+                    TooltipLine("Total Dodge", "%.2f%%".format(stats.totalDodgePercent), highlight = true)
+
+                    // Per-item breakdown
+                    val itemContribs = character.equipment.filter { (_, item) ->
+                        item.effectiveDodgeRating > 0 || item.effectiveAgility > 0
+                    }
+                    if (itemContribs.isNotEmpty()) {
+                        Divider(color = AppColors.tooltipDivider)
+                        Text("Per-Item Contributions", style = MaterialTheme.typography.labelSmall, color = AppColors.tooltipLabel)
+                        for ((slot, item) in itemContribs) {
+                            val parts = mutableListOf<String>()
+                            if (item.effectiveAgility > 0) parts += "${item.effectiveAgility} Agi"
+                            if (item.effectiveDodgeRating > 0) parts += "${item.effectiveDodgeRating} Dodge"
+                            TooltipLine("  ${slot.displayName}", parts.joinToString(", "))
+                        }
+                    }
+                }
+            }
+        },
+        tooltipPlacement = TooltipPlacement.CursorPoint(offset = DpOffset(0.dp, 16.dp)),
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Dodge", style = MaterialTheme.typography.bodyMedium)
+            Text("%.2f%%".format(stats.totalDodgePercent), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun DefenseStatRow(stats: TankStats, character: Character) {
+    TooltipArea(
+        tooltip = {
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = AppColors.tooltipBackground,
+                shadowElevation = 4.dp,
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp).widthIn(max = 300.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text("Defense Breakdown", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                    Divider(color = AppColors.tooltipDivider)
+                    TooltipLine("Base Defense Skill", "350")
+                    TooltipLine("Defense Rating", "${stats.defenseRating}")
+                    TooltipLine("Rating Conversion (÷ 2.37)", "+%.1f skill".format(stats.defenseAbove350))
+                    Divider(color = AppColors.tooltipDivider)
+                    TooltipLine("Total Defense Skill", "%.1f".format(stats.defenseSkill), highlight = true)
+                    TooltipLine("Crit Reduction from Defense", "%.2f%%".format(stats.critReductionFromDefense))
+
+                    // Per-item breakdown
+                    val itemContribs = character.equipment.filter { (_, item) -> item.effectiveDefenseRating > 0 }
+                    if (itemContribs.isNotEmpty()) {
+                        Divider(color = AppColors.tooltipDivider)
+                        Text("Per-Item Contributions", style = MaterialTheme.typography.labelSmall, color = AppColors.tooltipLabel)
+                        for ((slot, item) in itemContribs) {
+                            TooltipLine("  ${slot.displayName}", "${item.effectiveDefenseRating} Def")
+                        }
+                    }
+                }
+            }
+        },
+        tooltipPlacement = TooltipPlacement.CursorPoint(offset = DpOffset(0.dp, 16.dp)),
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Defense Skill", style = MaterialTheme.typography.bodyMedium)
+            Text("%.1f".format(stats.defenseSkill), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ResilienceStatRow(stats: TankStats, character: Character) {
+    TooltipArea(
+        tooltip = {
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = AppColors.tooltipBackground,
+                shadowElevation = 4.dp,
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp).widthIn(max = 300.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text("Resilience Breakdown", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                    Divider(color = AppColors.tooltipDivider)
+                    TooltipLine("Resilience Rating", "${stats.resilienceRating}")
+                    TooltipLine("Crit Reduction (÷ 39.4)", "%.2f%%".format(stats.critReductionFromResilience))
+                    Divider(color = AppColors.tooltipDivider)
+                    TooltipLine("Total Crit Reduction", "%.2f%%".format(stats.critReductionFromResilience), highlight = true)
+
+                    // Per-item breakdown
+                    val itemContribs = character.equipment.filter { (_, item) -> item.effectiveResilienceRating > 0 }
+                    if (itemContribs.isNotEmpty()) {
+                        Divider(color = AppColors.tooltipDivider)
+                        Text("Per-Item Contributions", style = MaterialTheme.typography.labelSmall, color = AppColors.tooltipLabel)
+                        for ((slot, item) in itemContribs) {
+                            TooltipLine("  ${slot.displayName}", "${item.effectiveResilienceRating} Resil")
+                        }
+                    }
+                }
+            }
+        },
+        tooltipPlacement = TooltipPlacement.CursorPoint(offset = DpOffset(0.dp, 16.dp)),
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Resilience Rating", style = MaterialTheme.typography.bodyMedium)
+            Text("${stats.resilienceRating}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -87,7 +221,7 @@ private fun HealthStatRow(stats: TankStats) {
         tooltip = {
             Surface(
                 shape = RoundedCornerShape(6.dp),
-                color = Color(0xFF1A1A2E),
+                color = AppColors.tooltipBackground,
                 shadowElevation = 4.dp,
             ) {
                 Column(
@@ -95,21 +229,21 @@ private fun HealthStatRow(stats: TankStats) {
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Text("Health Breakdown", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
-                    Divider(color = Color(0xFF333355))
+                    Divider(color = AppColors.tooltipDivider)
                     TooltipLine("Base Stamina", "${TankStats.BASE_STAMINA}")
                     TooltipLine("Gear Stamina", "${stats.stamina}")
                     TooltipLine("Total Raw Stamina", "$totalRawSta")
-                    Divider(color = Color(0xFF333355))
+                    Divider(color = AppColors.tooltipDivider)
                     TooltipLine("  Dire Bear Form (×%.2f)".format(direBearMult), "")
                     TooltipLine("  Heart of the Wild ${stats.heartOfTheWild}/5 (×%.2f)".format(hotwMult), "")
                     TooltipLine("  Survival of the Fittest ${stats.survivalOfTheFittest}/3 (×%.2f)".format(sotfMult), "")
                     TooltipLine("  Tauren Endurance (×%.2f)".format(taurenMult), "")
                     TooltipLine("Bear Form Stamina", "$bearSta")
-                    Divider(color = Color(0xFF333355))
+                    Divider(color = AppColors.tooltipDivider)
                     TooltipLine("Base HP", "${TankStats.BASE_HP}")
                     TooltipLine("First 20 Sta (×1 HP)", "20")
                     TooltipLine("Bonus Sta $bonusSta (×10 HP)", "${bonusSta * 10}")
-                    Divider(color = Color(0xFF333355))
+                    Divider(color = AppColors.tooltipDivider)
                     TooltipLine("Bear Form Health", "${stats.bearFormHealth}", highlight = true)
                 }
             }
@@ -137,7 +271,7 @@ private fun ArmorStatRow(stats: TankStats) {
         tooltip = {
             Surface(
                 shape = RoundedCornerShape(6.dp),
-                color = Color(0xFF1A1A2E),
+                color = AppColors.tooltipBackground,
                 shadowElevation = 4.dp,
             ) {
                 Column(
@@ -145,16 +279,16 @@ private fun ArmorStatRow(stats: TankStats) {
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Text("Armor Breakdown", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
-                    Divider(color = Color(0xFF333355))
+                    Divider(color = AppColors.tooltipDivider)
                     TooltipLine("Leather Armor (gear)", "${stats.leatherArmor}")
                     TooltipLine("  Thick Hide ${stats.thickHide}/3 (×%.2f)".format(thickHideMult), "$thickHided")
                     TooltipLine("Other Armor (gear)", "${stats.otherArmor}")
                     TooltipLine("Total Item Armor", "$totalItemArmor")
-                    Divider(color = Color(0xFF333355))
+                    Divider(color = AppColors.tooltipDivider)
                     TooltipLine("  Dire Bear Form (×5)", "$bearItemArmor")
                     TooltipLine("  Base ${TankStats.BASE_AGILITY} + Gear ${stats.agility} × Survival of the Fittest", "$bearAgi")
                     TooltipLine("  Agility Armor ($bearAgi × 2)", "$agiArmor")
-                    Divider(color = Color(0xFF333355))
+                    Divider(color = AppColors.tooltipDivider)
                     TooltipLine("Bear Form Armor", "${stats.bearFormArmor}", highlight = true)
                 }
             }
@@ -178,14 +312,14 @@ private fun TooltipLine(label: String, value: String, highlight: Boolean = false
         Text(
             label,
             style = MaterialTheme.typography.bodySmall,
-            color = if (highlight) Color(0xFFFFD700) else Color(0xFFB0B0B0),
+            color = if (highlight) AppColors.tooltipHighlight else AppColors.tooltipLabel,
         )
         Spacer(Modifier.width(24.dp))
         Text(
             value,
             style = MaterialTheme.typography.bodySmall,
             fontWeight = if (highlight) FontWeight.Bold else FontWeight.Normal,
-            color = if (highlight) Color(0xFFFFD700) else Color.White,
+            color = if (highlight) AppColors.tooltipHighlight else Color.White,
         )
     }
 }

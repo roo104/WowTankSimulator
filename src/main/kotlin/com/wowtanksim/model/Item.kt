@@ -23,6 +23,7 @@ data class Item(
     val icon: String = "",
     val quality: ItemQuality = ItemQuality.COMMON,
     val slot: EquipSlot? = null,
+    val ilvl: Int = 0,
     val stamina: Int = 0,
     val agility: Int = 0,
     val strength: Int = 0,

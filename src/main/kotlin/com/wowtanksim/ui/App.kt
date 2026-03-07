@@ -3,12 +3,23 @@ package com.wowtanksim.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.wowtanksim.model.Character
 import com.wowtanksim.model.EquipSlot
 import com.wowtanksim.service.ArmoryService
 import kotlinx.coroutines.launch
+
+private enum class ImportStep(val label: String) {
+    IDLE("Import from Armory"),
+    AUTHENTICATING("Authenticating..."),
+    FETCHING_EQUIPMENT("Fetching equipment..."),
+    RESOLVING_ITEMS("Resolving items..."),
+    LOADING_TALENTS("Loading talents..."),
+}
 
 @Composable
 fun App() {
@@ -19,7 +30,7 @@ fun App() {
     var importRealm by remember { mutableStateOf("spineshatter") }
     var importName by remember { mutableStateOf("tauroo") }
     var importError by remember { mutableStateOf<String?>(null) }
-    var isImporting by remember { mutableStateOf(false) }
+    var importStep by remember { mutableStateOf(ImportStep.IDLE) }
     var selectedTab by remember { mutableStateOf(0) }
     val scope = rememberCoroutineScope()
 
@@ -57,18 +68,31 @@ fun App() {
                     Button(
                         onClick = {
                             scope.launch {
-                                isImporting = true
+                                importStep = ImportStep.AUTHENTICATING
                                 importError = null
-                                ArmoryService.fetchCharacter(importRegion, importRealm, importName)
+                                ArmoryService.fetchCharacter(
+                                    region = importRegion,
+                                    realm = importRealm,
+                                    name = importName,
+                                    onProgress = { step ->
+                                        importStep = when {
+                                            "auth" in step.lowercase() -> ImportStep.AUTHENTICATING
+                                            "equipment" in step.lowercase() || "fetching" in step.lowercase() -> ImportStep.FETCHING_EQUIPMENT
+                                            "item" in step.lowercase() || "resolv" in step.lowercase() -> ImportStep.RESOLVING_ITEMS
+                                            "talent" in step.lowercase() -> ImportStep.LOADING_TALENTS
+                                            else -> importStep
+                                        }
+                                    },
+                                )
                                     .onSuccess { character = it }
                                     .onFailure { importError = "Import failed: ${it.message}" }
-                                isImporting = false
+                                importStep = ImportStep.IDLE
                             }
                         },
-                        enabled = !isImporting && importRealm.isNotBlank() && importName.isNotBlank(),
+                        enabled = importStep == ImportStep.IDLE && importRealm.isNotBlank() && importName.isNotBlank(),
                         modifier = Modifier.padding(top = 8.dp),
                     ) {
-                        Text(if (isImporting) "Importing..." else "Import from Armory")
+                        Text(importStep.label)
                     }
                     importError?.let {
                         Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 12.dp))
@@ -112,14 +136,43 @@ fun App() {
                                 modifier = Modifier.weight(1f),
                             )
 
-                            // Right: stats + crit immunity
+                            // Right: stats + crit immunity OR welcome card
                             Column(
                                 modifier = Modifier.weight(1f),
                                 verticalArrangement = Arrangement.spacedBy(12.dp),
                             ) {
-                                val stats = character.aggregateStats()
-                                CritImmunityPanel(stats = stats, sotfPoints = character.survivalOfTheFittest)
-                                CharacterPanel(stats = stats, character = character)
+                                if (character.equipment.isEmpty()) {
+                                    WelcomeCard(
+                                        onImportClick = {
+                                            scope.launch {
+                                                importStep = ImportStep.AUTHENTICATING
+                                                importError = null
+                                                ArmoryService.fetchCharacter(
+                                                    region = importRegion,
+                                                    realm = importRealm,
+                                                    name = importName,
+                                                    onProgress = { step ->
+                                                        importStep = when {
+                                                            "auth" in step.lowercase() -> ImportStep.AUTHENTICATING
+                                                            "equipment" in step.lowercase() || "fetching" in step.lowercase() -> ImportStep.FETCHING_EQUIPMENT
+                                                            "item" in step.lowercase() || "resolv" in step.lowercase() -> ImportStep.RESOLVING_ITEMS
+                                                            "talent" in step.lowercase() -> ImportStep.LOADING_TALENTS
+                                                            else -> importStep
+                                                        }
+                                                    },
+                                                )
+                                                    .onSuccess { character = it }
+                                                    .onFailure { importError = "Import failed: ${it.message}" }
+                                                importStep = ImportStep.IDLE
+                                            }
+                                        },
+                                        isImporting = importStep != ImportStep.IDLE,
+                                    )
+                                } else {
+                                    val stats = character.aggregateStats()
+                                    CritImmunityPanel(stats = stats, sotfPoints = character.survivalOfTheFittest)
+                                    CharacterPanel(stats = stats, character = character)
+                                }
                             }
                         }
                     }
@@ -149,6 +202,44 @@ fun App() {
                     character = character.withItem(slot, item)
                     showItemDialog = false
                 },
+            )
+        }
+    }
+}
+
+@Composable
+private fun WelcomeCard(onImportClick: () -> Unit, isImporting: Boolean) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp).fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                "No Equipment Loaded",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                "Get started by importing your character from the Armory, or click any equipment slot on the left to manually add items.",
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(4.dp))
+            Button(
+                onClick = onImportClick,
+                enabled = !isImporting,
+            ) {
+                Text(if (isImporting) "Importing..." else "Import from Armory")
+            }
+            Text(
+                "Or click an equipment slot to search for items",
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.inactive,
             )
         }
     }

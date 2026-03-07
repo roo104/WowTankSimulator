@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.wowtanksim.model.TankStats
@@ -17,7 +16,7 @@ fun CritImmunityPanel(stats: TankStats, sotfPoints: Int, modifier: Modifier = Mo
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = if (result.isCritImmune) Color(0xFF1B3A1B) else Color(0xFF3A1B1B)
+            containerColor = if (result.isCritImmune) AppColors.critImmuneBackground else AppColors.critVulnerableBackground
         ),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -25,15 +24,15 @@ fun CritImmunityPanel(stats: TankStats, sotfPoints: Int, modifier: Modifier = Mo
                 if (result.isCritImmune) "CRIT IMMUNE" else "NOT CRIT IMMUNE",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (result.isCritImmune) Color(0xFF4CAF50) else Color(0xFFF44336),
+                color = if (result.isCritImmune) AppColors.positive else AppColors.negative,
             )
 
             // Progress bar
             LinearProgressIndicator(
                 progress = (result.progressPercent / 100.0).toFloat(),
                 modifier = Modifier.fillMaxWidth().height(12.dp),
-                color = if (result.isCritImmune) Color(0xFF4CAF50) else Color(0xFFFF9800),
-                trackColor = Color(0xFF424242),
+                color = if (result.isCritImmune) AppColors.positive else AppColors.warning,
+                trackColor = AppColors.progressTrack,
             )
             Text(
                 "%.1f%% toward crit immunity".format(result.progressPercent),
@@ -62,18 +61,18 @@ fun CritImmunityPanel(stats: TankStats, sotfPoints: Int, modifier: Modifier = Mo
                 val excessResiRating = excess * 39.4
                 Text(
                     "Excess: +%.2f%% crit reduction".format(excess),
-                    color = Color(0xFF4CAF50),
+                    color = AppColors.positive,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
                     "Can drop ~%.0f defense rating OR ~%.0f resilience rating".format(excessDefRating, excessResiRating),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFFA5D6A7),
+                    color = AppColors.excessHint,
                 )
             } else {
                 Text(
                     "Gap: %.2f%% crit reduction still needed".format(result.remainingCritGap),
-                    color = Color(0xFFF44336),
+                    color = AppColors.negative,
                     fontWeight = FontWeight.Bold,
                 )
                 val defRatingNeeded = (result.remainingCritGap / 0.04) * 2.3654
@@ -81,7 +80,7 @@ fun CritImmunityPanel(stats: TankStats, sotfPoints: Int, modifier: Modifier = Mo
                 Text(
                     "Need ~%.0f more defense rating OR ~%.0f more resilience rating".format(defRatingNeeded, resiRatingNeeded),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFFFFCC80),
+                    color = AppColors.gapHint,
                 )
             }
         }

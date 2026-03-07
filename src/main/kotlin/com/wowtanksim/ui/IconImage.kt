@@ -8,7 +8,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -70,6 +69,6 @@ fun IconImage(url: String, size: Dp = 28.dp, modifier: Modifier = Modifier) {
             contentScale = ContentScale.Crop,
         )
     } else {
-        Box(modifier.size(size).clip(shape).background(Color(0xFF2A2A2A)))
+        Box(modifier.size(size).clip(shape).background(AppColors.iconPlaceholder))
     }
 }

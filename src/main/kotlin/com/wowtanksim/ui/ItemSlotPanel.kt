@@ -23,6 +23,25 @@ import com.wowtanksim.model.Item
 import com.wowtanksim.service.SetBonusService
 import com.wowtanksim.service.SetBonusStat
 
+private data class SlotGroup(val name: String, val slots: List<EquipSlot>)
+
+private val slotGroups = listOf(
+    SlotGroup("Armor", listOf(
+        EquipSlot.HEAD, EquipSlot.SHOULDER, EquipSlot.CHEST,
+        EquipSlot.WRIST, EquipSlot.HANDS, EquipSlot.WAIST,
+        EquipSlot.LEGS, EquipSlot.FEET,
+    )),
+    SlotGroup("Accessories", listOf(
+        EquipSlot.NECK, EquipSlot.BACK,
+        EquipSlot.RING1, EquipSlot.RING2,
+        EquipSlot.TRINKET1, EquipSlot.TRINKET2,
+    )),
+    SlotGroup("Weapons", listOf(
+        EquipSlot.MAINHAND, EquipSlot.IDOL,
+    )),
+)
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ItemSlotPanel(
     equipment: Map<EquipSlot, Item>,
@@ -41,9 +60,25 @@ fun ItemSlotPanel(
             Divider(modifier = Modifier.padding(vertical = 4.dp))
 
             LazyColumn(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                items(EquipSlot.entries) { slot ->
-                    val item = equipment[slot]
-                    SlotRow(slot, item, equipment, setBonuses, onSlotClick, onRemoveItem)
+                slotGroups.forEach { group ->
+                    stickyHeader {
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                group.name,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    items(group.slots) { slot ->
+                        val item = equipment[slot]
+                        SlotRow(slot, item, equipment, setBonuses, onSlotClick, onRemoveItem)
+                    }
                 }
             }
         }
@@ -73,7 +108,7 @@ private fun SlotRow(
             slot.displayName,
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.width(80.dp),
-            color = Color(0xFFB0B0B0),
+            color = AppColors.slotLabel,
         )
         if (item != null) {
             if (item.iconUrl.isNotBlank()) {
@@ -93,7 +128,7 @@ private fun SlotRow(
                     Text(
                         ench.name,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF00CC00),
+                        color = AppColors.enchantGreen,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -117,31 +152,26 @@ private fun SlotRow(
                                     modifier = Modifier
                                         .size(16.dp)
                                         .clip(CircleShape)
-                                        .background(gemColorToColor(socketColor).copy(alpha = 0.3f))
+                                        .background(AppColors.gemSocketColor(socketColor).copy(alpha = 0.3f))
                                 )
                             }
                         }
                     }
                 }
             }
-            // Compact stat summary (effective stats)
-            Text(
-                buildStatSummary(item),
-                style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF90A4AE),
-                modifier = Modifier.padding(start = 8.dp),
-            )
+            // Compact stat summary with tooltip
+            StatSummaryWithTooltip(item)
             TextButton(
                 onClick = { onRemoveItem(slot) },
                 contentPadding = PaddingValues(4.dp),
             ) {
-                Text("X", color = Color(0xFFEF5350), style = MaterialTheme.typography.bodySmall)
+                Text("X", color = AppColors.removeButton, style = MaterialTheme.typography.bodySmall)
             }
         } else {
             Text(
                 "Empty - click to add",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF616161),
+                color = AppColors.emptySlot,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -153,7 +183,7 @@ private fun SlotRow(
             tooltip = {
                 Surface(
                     shape = RoundedCornerShape(4.dp),
-                    color = Color(0xFF1A1A2E),
+                    color = AppColors.tooltipBackground,
                     shadowElevation = 4.dp,
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
@@ -163,6 +193,13 @@ private fun SlotRow(
                             fontWeight = FontWeight.Bold,
                             color = item.quality.color,
                         )
+                        if (item.ilvl > 0) {
+                            Text(
+                                "Item Level ${item.ilvl}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AppColors.tooltipLabel,
+                            )
+                        }
                         val stats = buildItemStatText(item)
                         if (stats.isNotEmpty()) {
                             Text(
@@ -175,17 +212,15 @@ private fun SlotRow(
                             Text(
                                 ench.name,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF00CC00),
+                                color = AppColors.enchantGreen,
                             )
                         }
                         if (item.setId > 0) {
-                            // Use local definitions first, fall back to API-loaded bonuses
                             val localBonuses = SetBonusService.getSetBonuses(item.setId)
                             val equippedCount = equipment.values.count { it.setId == item.setId }
                             val bonusesToShow = if (localBonuses.isNotEmpty()) {
                                 localBonuses.map { it.copy(isActive = equippedCount >= it.piecesRequired) }
                             } else {
-                                // Find matching bonuses from API-loaded data by set name
                                 val itemSetNames = setBonuses
                                     .filter { equipment.values.any { eq -> eq.setId == item.setId } }
                                     .map { it.setName }
@@ -194,20 +229,20 @@ private fun SlotRow(
                             }
                             if (bonusesToShow.isNotEmpty()) {
                                 Divider(
-                                    color = Color(0xFF444466),
+                                    color = AppColors.setDivider,
                                     modifier = Modifier.padding(vertical = 4.dp),
                                 )
                                 Text(
                                     "${bonusesToShow.first().setName} ($equippedCount/${bonusesToShow.maxOf { it.piecesRequired }})",
                                     style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFFFD100),
+                                    color = AppColors.setBonusTitle,
                                 )
                                 for (bonus in bonusesToShow) {
                                     Text(
                                         "(${bonus.piecesRequired}) Set: ${bonus.description}",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = if (bonus.isActive) Color(0xFF00CC00) else Color(0xFF808080),
+                                        color = if (bonus.isActive) AppColors.enchantGreen else AppColors.inactive,
                                     )
                                 }
                             }
@@ -227,12 +262,54 @@ private fun SlotRow(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
+private fun StatSummaryWithTooltip(item: Item) {
+    val summary = buildStatSummary(item)
+    val fullStatNames = buildFullStatNames(item)
+
+    if (fullStatNames.isNotBlank()) {
+        TooltipArea(
+            tooltip = {
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = AppColors.tooltipBackground,
+                    shadowElevation = 4.dp,
+                ) {
+                    Text(
+                        fullStatNames,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White,
+                        modifier = Modifier.padding(8.dp),
+                    )
+                }
+            },
+            delayMillis = 200,
+            tooltipPlacement = TooltipPlacement.CursorPoint(offset = DpOffset(0.dp, 16.dp)),
+        ) {
+            Text(
+                summary,
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.statSummary,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+    } else {
+        Text(
+            summary,
+            style = MaterialTheme.typography.bodySmall,
+            color = AppColors.statSummary,
+            modifier = Modifier.padding(start = 8.dp),
+        )
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
 private fun GemWithTooltip(gem: Gem, content: @Composable () -> Unit) {
     TooltipArea(
         tooltip = {
             Surface(
                 shape = RoundedCornerShape(4.dp),
-                color = Color(0xFF1A1A2E),
+                color = AppColors.tooltipBackground,
                 shadowElevation = 4.dp,
             ) {
                 Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
@@ -247,7 +324,7 @@ private fun GemWithTooltip(gem: Gem, content: @Composable () -> Unit) {
                         Text(
                             stats,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF00CC00),
+                            color = AppColors.enchantGreen,
                         )
                     }
                 }
@@ -279,13 +356,6 @@ private fun buildGemStatText(gem: Gem): String {
     return lines.joinToString("\n")
 }
 
-private fun gemColorToColor(color: GemColor): Color = when (color) {
-    GemColor.RED -> Color(0xFFFF4444)
-    GemColor.BLUE -> Color(0xFF4488FF)
-    GemColor.YELLOW -> Color(0xFFFFDD00)
-    GemColor.META -> Color(0xFFCCCCCC)
-}
-
 private fun buildItemStatText(item: Item): String {
     val lines = mutableListOf<String>()
     if (item.armor > 0) lines += "${item.armor} Armor"
@@ -307,11 +377,22 @@ private fun buildItemStatText(item: Item): String {
 
 private fun buildStatSummary(item: Item): String {
     val parts = mutableListOf<String>()
-    if (item.effectiveStamina > 0) parts += "${item.effectiveStamina} Sta"
+    if (item.effectiveStamina > 0) parts += "${item.effectiveStamina} Stam"
     if (item.effectiveAgility > 0) parts += "${item.effectiveAgility} Agi"
     if (item.effectiveDefenseRating > 0) parts += "${item.effectiveDefenseRating} Def"
     if (item.effectiveDodgeRating > 0) parts += "${item.effectiveDodgeRating} Dodge"
-    if (item.effectiveResilienceRating > 0) parts += "${item.effectiveResilienceRating} Resi"
+    if (item.effectiveResilienceRating > 0) parts += "${item.effectiveResilienceRating} Resil"
     if (item.effectiveArmor > 0) parts += "${item.effectiveArmor} Armor"
-    return parts.joinToString(" | ")
+    return parts.joinToString(" \u00B7 ")
+}
+
+private fun buildFullStatNames(item: Item): String {
+    val parts = mutableListOf<String>()
+    if (item.effectiveStamina > 0) parts += "${item.effectiveStamina} Stamina"
+    if (item.effectiveAgility > 0) parts += "${item.effectiveAgility} Agility"
+    if (item.effectiveDefenseRating > 0) parts += "${item.effectiveDefenseRating} Defense Rating"
+    if (item.effectiveDodgeRating > 0) parts += "${item.effectiveDodgeRating} Dodge Rating"
+    if (item.effectiveResilienceRating > 0) parts += "${item.effectiveResilienceRating} Resilience Rating"
+    if (item.effectiveArmor > 0) parts += "${item.effectiveArmor} Armor"
+    return parts.joinToString("\n")
 }

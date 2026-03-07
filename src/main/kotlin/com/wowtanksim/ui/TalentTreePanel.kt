@@ -29,14 +29,10 @@ private val ICON_SIZE = 40.dp
 private val GRID_COLS = 4
 private val GRID_ROWS = 9
 
-private val COLOR_MAXED = Color(0xFFFFD700)     // gold
-private val COLOR_AVAILABLE = Color(0xFF00CC00)  // green
-private val COLOR_LOCKED = Color(0xFF666666)     // grey
-
 private val TREE_BACKGROUNDS = mapOf(
-    "Balance" to Color(0xFF0D1526),
-    "Feral Combat" to Color(0xFF1A1308),
-    "Restoration" to Color(0xFF0A1A0D),
+    "Balance" to AppColors.talentBgBalance,
+    "Feral Combat" to AppColors.talentBgFeral,
+    "Restoration" to AppColors.talentBgRestoration,
 )
 
 @Composable
@@ -99,7 +95,7 @@ private fun SingleTreePanel(
     talentState: TalentState,
     onTalentStateChange: (TalentState) -> Unit,
 ) {
-    val bgColor = TREE_BACKGROUNDS[treeDef.name] ?: Color(0xFF111111)
+    val bgColor = TREE_BACKGROUNDS[treeDef.name] ?: AppColors.talentBgFallback
     val pointsInTree = talentState.pointsInTree(treeDef.name)
 
     Column {
@@ -138,20 +134,17 @@ private fun SingleTreePanel(
 
                             val prereqPts = talentState.points[talent.prerequisiteId] ?: 0
                             val prereqDef = TalentTrees.byId[talent.prerequisiteId]!!
-                            val arrowColor = if (prereqPts >= prereqDef.maxPoints) COLOR_AVAILABLE else COLOR_LOCKED
+                            val arrowColor = if (prereqPts >= prereqDef.maxPoints) AppColors.talentAvailable else AppColors.talentLocked
 
                             if (prereq.col == talent.col) {
-                                // Straight vertical arrow
                                 drawLine(arrowColor, Offset(fromX, fromY), Offset(toX, toY), strokeWidth = 2f)
                             } else {
-                                // L-shaped: go down from prereq, then across to talent
                                 val midY = toY - CELL_SIZE.toPx() * 0.3f
                                 drawLine(arrowColor, Offset(fromX, fromY), Offset(fromX, midY), strokeWidth = 2f)
                                 drawLine(arrowColor, Offset(fromX, midY), Offset(toX, midY), strokeWidth = 2f)
                                 drawLine(arrowColor, Offset(toX, midY), Offset(toX, toY), strokeWidth = 2f)
                             }
 
-                            // Arrowhead
                             val arrowSize = 5f
                             drawLine(arrowColor, Offset(toX - arrowSize, toY - arrowSize * 2), Offset(toX, toY), strokeWidth = 2f)
                             drawLine(arrowColor, Offset(toX + arrowSize, toY - arrowSize * 2), Offset(toX, toY), strokeWidth = 2f)
@@ -159,7 +152,6 @@ private fun SingleTreePanel(
                     }
                 },
         ) {
-            // Talent nodes
             for (talent in treeDef.talents) {
                 val pts = talentState.points[talent.id] ?: 0
                 val canAdd = talentState.canAddPoint(talent.id)
@@ -205,9 +197,9 @@ private fun TalentNode(
     onRemovePoint: () -> Unit,
 ) {
     val borderColor = when {
-        isMaxed -> COLOR_MAXED
-        canAdd || points > 0 -> COLOR_AVAILABLE
-        else -> COLOR_LOCKED
+        isMaxed -> AppColors.talentMaxed
+        canAdd || points > 0 -> AppColors.talentAvailable
+        else -> AppColors.talentLocked
     }
     val nodeAlpha = if (isLocked) 0.4f else 1.0f
 
@@ -222,7 +214,7 @@ private fun TalentNode(
         tooltip = {
             Surface(
                 shape = RoundedCornerShape(6.dp),
-                color = Color(0xFF1A1A2E),
+                color = AppColors.tooltipBackground,
                 shadowElevation = 4.dp,
             ) {
                 Column(modifier = Modifier.padding(10.dp).widthIn(max = 250.dp)) {
@@ -235,14 +227,14 @@ private fun TalentNode(
                     Text(
                         "Rank ${points}/${talent.maxPoints}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (isMaxed) COLOR_MAXED else Color(0xFFAAAAAA),
+                        color = if (isMaxed) AppColors.talentMaxed else AppColors.talentRankText,
                     )
                     if (rankDesc.isNotEmpty()) {
                         Spacer(Modifier.height(4.dp))
                         Text(
                             rankDesc,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFFCCCCCC),
+                            color = AppColors.talentDescText,
                         )
                     }
                     if (points in 1 until talent.maxPoints && points < talent.description.size) {
@@ -250,12 +242,12 @@ private fun TalentNode(
                         Text(
                             "Next rank:",
                             style = MaterialTheme.typography.labelSmall,
-                            color = COLOR_AVAILABLE,
+                            color = AppColors.talentAvailable,
                         )
                         Text(
                             talent.description[points],
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFFCCCCCC),
+                            color = AppColors.talentDescText,
                         )
                     }
                 }
@@ -278,7 +270,6 @@ private fun TalentNode(
                                     onRemovePoint()
                                     event.changes.forEach { it.consume() }
                                 } else {
-                                    // Left-click: add if possible, otherwise remove
                                     if (canAdd) onAddPoint() else if (points > 0) onRemovePoint()
                                     event.changes.forEach { it.consume() }
                                 }
@@ -290,14 +281,13 @@ private fun TalentNode(
         ) {
             IconImage(url = iconUrl, size = ICON_SIZE)
 
-            // Points overlay
             if (points > 0 || !isLocked) {
                 Text(
                     "${points}/${talent.maxPoints}",
                     modifier = Modifier
-                        .background(Color(0xCC000000), RoundedCornerShape(2.dp))
+                        .background(AppColors.talentOverlay, RoundedCornerShape(2.dp))
                         .padding(horizontal = 2.dp),
-                    color = if (isMaxed) COLOR_MAXED else if (points > 0) COLOR_AVAILABLE else Color.White,
+                    color = if (isMaxed) AppColors.talentMaxed else if (points > 0) AppColors.talentAvailable else Color.White,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.End,
