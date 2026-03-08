@@ -7,6 +7,18 @@ import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import io.ktor.http.*
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+
+data class WowheadSearchResult(
+    val id: Int,
+    val name: String,
+    val icon: String = "",
+    val quality: ItemQuality = ItemQuality.COMMON,
+)
 
 object WowheadService {
 
@@ -18,6 +30,54 @@ object WowheadService {
 
     private val enchantCache = mutableMapOf<Int, Enchant>()
     private val gemCache = mutableMapOf<Int, Gem>()
+
+    /**
+     * Search Wowhead TBC for items by name using the suggestions API.
+     * Returns a list of matching items (id + name + quality).
+     * Response format: {"search":"query","results":[{"type":3,"id":28660,"name":"...","typeName":"Item","icon":"...","quality":4}]}
+     */
+    suspend fun searchItems(query: String): Result<List<WowheadSearchResult>> {
+        if (query.isBlank()) return Result.success(emptyList())
+
+        val url = "https://www.wowhead.com/tbc/search/suggestions-template?q=${query.encodeURLParameter()}"
+        return try {
+            val response = client.get(url) {
+                header("User-Agent", "Mozilla/5.0 (WoW Tank Sim)")
+            }
+            val body = response.bodyAsText()
+            Result.success(parseSuggestionsResults(body))
+        } catch (e: Exception) {
+            DebugLog.error("Wowhead search failed for '$query'", e)
+            Result.failure(e)
+        }
+    }
+
+    private val suggestionsJson = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+
+    private fun parseSuggestionsResults(json: String): List<WowheadSearchResult> {
+        val results = mutableListOf<WowheadSearchResult>()
+        try {
+            val parsed = suggestionsJson.parseToJsonElement(json).jsonObject
+            val arr = parsed["results"]?.jsonArray ?: return results
+
+            for (element in arr) {
+                val obj = element.jsonObject
+                // type 3 = Item on Wowhead
+                val typeName = obj["typeName"]?.jsonPrimitive?.content ?: ""
+                if (typeName != "Item") continue
+
+                val id = obj["id"]?.jsonPrimitive?.int ?: continue
+                val name = obj["name"]?.jsonPrimitive?.content ?: continue
+                val icon = obj["icon"]?.jsonPrimitive?.content ?: ""
+                val qualityId = obj["quality"]?.jsonPrimitive?.int ?: 1
+
+                results.add(WowheadSearchResult(id = id, name = name, icon = icon, quality = ItemQuality.fromId(qualityId)))
+            }
+        } catch (e: Exception) {
+            DebugLog.error("Failed to parse suggestions results: ${e::class.simpleName} - ${e.message}", e)
+        }
+        return results
+    }
 
     suspend fun fetchItem(itemId: Int): Result<Item> {
         val url = "https://www.wowhead.com/tbc/item=$itemId&xml"

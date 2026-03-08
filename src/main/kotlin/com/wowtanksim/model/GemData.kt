@@ -124,9 +124,5 @@ object GemData {
             Gem(id = 35501, name = "Eternal Earthstorm Diamond", icon = "inv_misc_gem_diamond_07", color = GemColor.META, defenseRating = 12),
             note = "+12 Def, +5% shield block",
         ),
-        GemOption(
-            Gem(id = 25897, name = "Bracing Earthstorm Diamond", icon = "inv_misc_gem_diamond_07", color = GemColor.META, stamina = 14),
-            note = "+14 Spell Dmg, -2% threat (non-tank)",
-        ),
     )
 }

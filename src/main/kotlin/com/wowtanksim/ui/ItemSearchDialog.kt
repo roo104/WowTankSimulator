@@ -17,7 +17,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.wowtanksim.model.*
+import com.wowtanksim.service.WowheadSearchResult
 import com.wowtanksim.service.WowheadService
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -50,6 +53,29 @@ fun ItemSearchDialog(
     var useManualGem by remember { mutableStateOf(listOf<Boolean>()) }
     var gemIdTexts by remember { mutableStateOf(listOf<String>()) }
     var gemLoading by remember { mutableStateOf(false) }
+
+    // Wowhead search state
+    var wowheadResults by remember { mutableStateOf<List<WowheadSearchResult>>(emptyList()) }
+    var wowheadSearching by remember { mutableStateOf(false) }
+    var wowheadSearchJob by remember { mutableStateOf<Job?>(null) }
+
+    // Debounced Wowhead search when query changes
+    LaunchedEffect(searchQuery) {
+        wowheadSearchJob?.cancel()
+        if (searchQuery.length >= 3) {
+            wowheadSearchJob = scope.launch {
+                delay(400) // debounce
+                wowheadSearching = true
+                WowheadService.searchItems(searchQuery)
+                    .onSuccess { wowheadResults = it }
+                    .onFailure { wowheadResults = emptyList() }
+                wowheadSearching = false
+            }
+        } else {
+            wowheadResults = emptyList()
+            wowheadSearching = false
+        }
+    }
 
     // Database items for slot
     val databaseItems = remember(slot) { ItemDatabase.itemsForSlot(slot).sortedByDescending { it.item.ilvl } }
@@ -89,13 +115,22 @@ fun ItemSearchDialog(
                     val filteredItems = if (searchQuery.isBlank()) databaseItems
                     else databaseItems.filter { it.item.name.contains(searchQuery, ignoreCase = true) || it.source.contains(searchQuery, ignoreCase = true) }
 
+                    // Filter out Wowhead results that are already in the local DB
+                    val localItemIds = filteredItems.map { it.item.id }.toSet()
+                    val filteredWowheadResults = wowheadResults.filter { it.id !in localItemIds }
+
                     Card(
-                        modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp),
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 250.dp),
                         colors = CardDefaults.cardColors(containerColor = AppColors.tooltipBackground),
                     ) {
-                        if (filteredItems.isEmpty()) {
+                        if (filteredItems.isEmpty() && filteredWowheadResults.isEmpty() && !wowheadSearching) {
                             Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                                Text("No items found", style = MaterialTheme.typography.bodySmall, color = AppColors.inactive)
+                                Text(
+                                    if (searchQuery.length in 1..2) "Type 3+ characters to search Wowhead"
+                                    else "No items found",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.inactive,
+                                )
                             }
                         } else {
                             LazyColumn {
@@ -106,8 +141,41 @@ fun ItemSearchDialog(
                                         error = null
                                     }
                                 }
+                                if (filteredWowheadResults.isNotEmpty()) {
+                                    item {
+                                        Text(
+                                            "Wowhead Results",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = AppColors.inactive,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                        )
+                                    }
+                                    items(filteredWowheadResults) { result ->
+                                        WowheadSearchRow(result) {
+                                            scope.launch {
+                                                isLoading = true
+                                                error = null
+                                                WowheadService.fetchItem(result.id)
+                                                    .onSuccess { fetchedItem = it.copy(slot = slot); fetchedEnchant = null }
+                                                    .onFailure { error = "Failed to fetch: ${it.message}" }
+                                                isLoading = false
+                                            }
+                                        }
+                                    }
+                                }
+                                if (wowheadSearching) {
+                                    item {
+                                        Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
+                                            Text("Searching Wowhead...", style = MaterialTheme.typography.bodySmall, color = AppColors.inactive)
+                                        }
+                                    }
+                                }
                             }
                         }
+                    }
+
+                    if (isLoading) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                     }
 
                     Text(
@@ -471,6 +539,37 @@ fun ItemSearchDialog(
             }
         },
     )
+}
+
+@Composable
+private fun WowheadSearchRow(result: WowheadSearchResult, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (result.icon.isNotBlank()) {
+            IconImage(url = "https://wow.zamimg.com/images/wow/icons/small/${result.icon}.jpg", size = 24.dp)
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                result.name,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                color = result.quality.color,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Text(
+            "#${result.id}",
+            style = MaterialTheme.typography.labelSmall,
+            color = AppColors.inactive,
+        )
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
