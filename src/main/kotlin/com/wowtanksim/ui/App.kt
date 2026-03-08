@@ -10,6 +10,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.wowtanksim.model.Character
 import com.wowtanksim.model.EquipSlot
+import com.wowtanksim.model.TankStats
 import com.wowtanksim.service.ArmoryService
 import kotlinx.coroutines.launch
 
@@ -31,6 +32,7 @@ fun App() {
     var importName by remember { mutableStateOf("tauroo") }
     var importError by remember { mutableStateOf<String?>(null) }
     var importStep by remember { mutableStateOf(ImportStep.IDLE) }
+    var baselineStats by remember { mutableStateOf<TankStats?>(null) }
     var selectedTab by remember { mutableStateOf(0) }
     val scope = rememberCoroutineScope()
 
@@ -84,7 +86,7 @@ fun App() {
                                         }
                                     },
                                 )
-                                    .onSuccess { character = it }
+                                    .onSuccess { character = it; baselineStats = it.aggregateStats() }
                                     .onFailure { importError = "Import failed: ${it.message}" }
                                 importStep = ImportStep.IDLE
                             }
@@ -161,7 +163,7 @@ fun App() {
                                                         }
                                                     },
                                                 )
-                                                    .onSuccess { character = it }
+                                                    .onSuccess { character = it; baselineStats = it.aggregateStats() }
                                                     .onFailure { importError = "Import failed: ${it.message}" }
                                                 importStep = ImportStep.IDLE
                                             }
@@ -171,7 +173,7 @@ fun App() {
                                 } else {
                                     val stats = character.aggregateStats()
                                     CritImmunityPanel(stats = stats, sotfPoints = character.survivalOfTheFittest)
-                                    CharacterPanel(stats = stats, character = character)
+                                    CharacterPanel(stats = stats, character = character, baselineStats = baselineStats)
                                 }
                             }
                         }

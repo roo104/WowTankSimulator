@@ -24,20 +24,22 @@ data class SetBonusStat(
 object SetBonusService {
 
     // setId -> list of bonuses at various piece thresholds
-    // Set IDs are from wowhead's jsonEquip "itemset" field
+    // Set IDs are from the actual item setId field in ItemDatabase
     private val setDefinitions: Map<Int, List<SetBonusStat>> = mapOf(
         // Malorne Harness (T4 Feral) - setId 640
         640 to listOf(
             SetBonusStat("Malorne Harness", 2, "Your Mangle grants Clearcasting"),
-            // 4pc: +10% bonus attack power in Bear/Cat form (not a simple stat)
+            SetBonusStat("Malorne Harness", 4, "+1400 Armor in Bear Form", armor = 1400),
         ),
-        // Nordrassil Harness (T5 Feral) - setId 665
-        665 to listOf(
+        // Nordrassil Harness (T5 Feral) - setId 651
+        651 to listOf(
             SetBonusStat("Nordrassil Harness", 2, "+15 Agility", agility = 15),
+            SetBonusStat("Nordrassil Harness", 4, "Shred +75 damage, Lacerate +15 per tick"),
         ),
-        // Thunderheart Harness (T6 Feral) - setId 676
-        676 to listOf(
+        // Thunderheart Harness (T6 Feral) - setId 652
+        652 to listOf(
             SetBonusStat("Thunderheart Harness", 2, "+15 Agility", agility = 15),
+            SetBonusStat("Thunderheart Harness", 4, "Rip, Swipe, and Ferocious Bite +15% damage"),
         ),
         // Dragonhide Battlegear (PvP honor) - setId 2025
         2025 to listOf(
@@ -68,6 +70,21 @@ object SetBonusService {
             SetBonusStat("Heavy Clefthoof", 3, "+20 Strength", strength = 20),
         ),
     )
+
+    // Total number of pieces in each set
+    private val setTotalPieces: Map<Int, Int> = mapOf(
+        640 to 5,  // Malorne Harness
+        651 to 5,  // Nordrassil Harness
+        652 to 5,  // Thunderheart Harness
+        2025 to 5, // Dragonhide Battlegear
+        586 to 5,  // Gladiator's Dragonhide
+        615 to 5,  // Merciless Gladiator's Dragonhide
+        623 to 5,  // Vengeful Gladiator's Dragonhide
+        699 to 5,  // Brutal Gladiator's Dragonhide
+        574 to 3,  // Heavy Clefthoof
+    )
+
+    fun getTotalPieces(setId: Int): Int = setTotalPieces[setId] ?: 5
 
     /**
      * Get all set bonus definitions for a given setId.

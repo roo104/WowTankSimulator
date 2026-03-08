@@ -234,7 +234,7 @@ private fun SlotRow(
                                     modifier = Modifier.padding(vertical = 4.dp),
                                 )
                                 Text(
-                                    "${bonusesToShow.first().setName} ($equippedCount/${bonusesToShow.maxOf { it.piecesRequired }})",
+                                    "${bonusesToShow.first().setName} ($equippedCount/${SetBonusService.getTotalPieces(item.setId)})",
                                     style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Bold,
                                     color = AppColors.setBonusTitle,

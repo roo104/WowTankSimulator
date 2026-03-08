@@ -20,6 +20,7 @@ import com.wowtanksim.model.TankStats
 fun CharacterPanel(
     stats: TankStats,
     character: Character,
+    baselineStats: TankStats? = null,
     modifier: Modifier = Modifier,
 ) {
     val characterName = character.name
@@ -33,28 +34,39 @@ fun CharacterPanel(
             Divider(modifier = Modifier.padding(vertical = 4.dp))
 
             Text("Survivability", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-            HealthStatRow(stats)
-            ArmorStatRow(stats)
-            StatRow("Damage Reduction", "%.1f%%".format(stats.armorDamageReduction))
-            DodgeStatRow(stats, character)
-            DefenseStatRow(stats, character)
-            StatRow("Defense Rating", "${stats.defenseRating}")
-            ResilienceStatRow(stats, character)
-            StatRow("Dodge Rating", "${stats.dodgeRating}")
+            HealthStatRow(stats, baselineStats)
+            ArmorStatRow(stats, baselineStats)
+            StatRow("Damage Reduction", "%.1f%%".format(stats.armorDamageReduction),
+                diff = baselineStats?.let { stats.armorDamageReduction - it.armorDamageReduction })
+            DodgeStatRow(stats, character, baselineStats)
+            DefenseStatRow(stats, character, baselineStats)
+            StatRow("Defense Rating", "${stats.defenseRating}",
+                diff = baselineStats?.let { stats.defenseRating - it.defenseRating })
+            ResilienceStatRow(stats, character, baselineStats)
+            StatRow("Dodge Rating", "${stats.dodgeRating}",
+                diff = baselineStats?.let { stats.dodgeRating - it.dodgeRating })
 
             Spacer(Modifier.height(8.dp))
             Text("Attributes", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-            StatRow("Stamina", "${stats.stamina}")
-            StatRow("Agility", "${stats.agility}")
-            StatRow("Strength", "${stats.strength}")
-            StatRow("Armor (gear)", "${stats.totalArmor}")
+            StatRow("Stamina", "${stats.stamina}",
+                diff = baselineStats?.let { stats.stamina - it.stamina })
+            StatRow("Agility", "${stats.agility}",
+                diff = baselineStats?.let { stats.agility - it.agility })
+            StatRow("Strength", "${stats.strength}",
+                diff = baselineStats?.let { stats.strength - it.strength })
+            StatRow("Armor (gear)", "${stats.totalArmor}",
+                diff = baselineStats?.let { stats.totalArmor - it.totalArmor })
 
             Spacer(Modifier.height(8.dp))
             Text("Offense", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-            StatRow("Attack Power", "${stats.attackPower}")
-            StatRow("Hit Rating", "${stats.hitRating}")
-            StatRow("Crit Rating", "${stats.critRating}")
-            StatRow("Expertise Rating", "${stats.expertiseRating}")
+            StatRow("Attack Power", "${stats.attackPower}",
+                diff = baselineStats?.let { stats.attackPower - it.attackPower })
+            StatRow("Hit Rating", "${stats.hitRating}",
+                diff = baselineStats?.let { stats.hitRating - it.hitRating })
+            StatRow("Crit Rating", "${stats.critRating}",
+                diff = baselineStats?.let { stats.critRating - it.critRating })
+            StatRow("Expertise Rating", "${stats.expertiseRating}",
+                diff = baselineStats?.let { stats.expertiseRating - it.expertiseRating })
 
             // Set bonuses
             if (character.activeSetBonuses.isNotEmpty()) {
@@ -74,7 +86,7 @@ fun CharacterPanel(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun DodgeStatRow(stats: TankStats, character: Character) {
+private fun DodgeStatRow(stats: TankStats, character: Character, baselineStats: TankStats? = null) {
     TooltipArea(
         tooltip = {
             Surface(
@@ -114,16 +126,14 @@ private fun DodgeStatRow(stats: TankStats, character: Character) {
         },
         tooltipPlacement = TooltipPlacement.CursorPoint(offset = DpOffset(0.dp, 16.dp)),
     ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Dodge", style = MaterialTheme.typography.bodyMedium)
-            Text("%.2f%%".format(stats.totalDodgePercent), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-        }
+        StatRow("Dodge", "%.2f%%".format(stats.totalDodgePercent),
+            diff = baselineStats?.let { stats.totalDodgePercent - it.totalDodgePercent })
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun DefenseStatRow(stats: TankStats, character: Character) {
+private fun DefenseStatRow(stats: TankStats, character: Character, baselineStats: TankStats? = null) {
     TooltipArea(
         tooltip = {
             Surface(
@@ -159,16 +169,14 @@ private fun DefenseStatRow(stats: TankStats, character: Character) {
         },
         tooltipPlacement = TooltipPlacement.CursorPoint(offset = DpOffset(0.dp, 16.dp)),
     ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Defense Skill", style = MaterialTheme.typography.bodyMedium)
-            Text("%.1f".format(stats.defenseSkill), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-        }
+        StatRow("Defense Skill", "%.1f".format(stats.defenseSkill),
+            diff = baselineStats?.let { stats.defenseSkill - it.defenseSkill })
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ResilienceStatRow(stats: TankStats, character: Character) {
+private fun ResilienceStatRow(stats: TankStats, character: Character, baselineStats: TankStats? = null) {
     TooltipArea(
         tooltip = {
             Surface(
@@ -202,16 +210,14 @@ private fun ResilienceStatRow(stats: TankStats, character: Character) {
         },
         tooltipPlacement = TooltipPlacement.CursorPoint(offset = DpOffset(0.dp, 16.dp)),
     ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Resilience Rating", style = MaterialTheme.typography.bodyMedium)
-            Text("${stats.resilienceRating}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-        }
+        StatRow("Resilience Rating", "${stats.resilienceRating}",
+            diff = baselineStats?.let { stats.resilienceRating - it.resilienceRating })
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun HealthStatRow(stats: TankStats) {
+private fun HealthStatRow(stats: TankStats, baselineStats: TankStats? = null) {
     val totalRawSta = TankStats.BASE_STAMINA + stats.stamina
     val sotfMult = 1.0 + stats.survivalOfTheFittest * 0.01
     val direBearMult = 1.25
@@ -253,16 +259,14 @@ private fun HealthStatRow(stats: TankStats) {
         },
         tooltipPlacement = TooltipPlacement.CursorPoint(offset = DpOffset(0.dp, 16.dp)),
     ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Health (Bear Form)", style = MaterialTheme.typography.bodyMedium)
-            Text("${stats.bearFormHealth}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-        }
+        StatRow("Health (Bear Form)", "${stats.bearFormHealth}",
+            diff = baselineStats?.let { stats.bearFormHealth - it.bearFormHealth })
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ArmorStatRow(stats: TankStats) {
+private fun ArmorStatRow(stats: TankStats, baselineStats: TankStats? = null) {
     val bearAgi = stats.bearFormAgility
     val agiArmor = bearAgi * 2
     val thickHideMult = 1.0 + listOf(0.0, 0.04, 0.07, 0.10)[stats.thickHide.coerceIn(0, 3)]
@@ -298,10 +302,8 @@ private fun ArmorStatRow(stats: TankStats) {
         },
         tooltipPlacement = TooltipPlacement.CursorPoint(offset = DpOffset(0.dp, 16.dp)),
     ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Armor (Bear Form)", style = MaterialTheme.typography.bodyMedium)
-            Text("${stats.bearFormArmor}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-        }
+        StatRow("Armor (Bear Form)", "${stats.bearFormArmor}",
+            diff = baselineStats?.let { stats.bearFormArmor - it.bearFormArmor })
     }
 }
 
@@ -328,9 +330,32 @@ private fun TooltipLine(label: String, value: String, highlight: Boolean = false
 }
 
 @Composable
-private fun StatRow(label: String, value: String) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+private fun StatRow(label: String, value: String, diff: Number? = null) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Text(label, style = MaterialTheme.typography.bodyMedium)
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+            if (diff != null) {
+                val d = diff.toDouble()
+                if (d != 0.0) {
+                    val isPositive = d > 0
+                    val formatted = if (diff is Int || diff is Long) {
+                        if (isPositive) "+$diff" else "$diff"
+                    } else {
+                        if (isPositive) "+%.1f".format(d) else "%.1f".format(d)
+                    }
+                    Text(
+                        formatted,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isPositive) AppColors.positive else AppColors.negative,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+        }
     }
 }
