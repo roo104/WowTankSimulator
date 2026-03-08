@@ -1,5 +1,11 @@
 package com.wowtanksim.model
 
+enum class ContentTier(val displayName: String, val maxIlvl: Int) {
+    T4("T4", 120),
+    T5("T5", 133),
+    T6("T6", Int.MAX_VALUE),
+}
+
 data class ItemOption(
     val item: Item,
     val source: String = "",
@@ -26,10 +32,6 @@ object ItemDatabase {
 
     private val headItems = listOf(
         ItemOption(
-            Item(id = 8345, name = "Wolfshead Helm", icon = "inv_helmet_04", quality = ItemQuality.UNCOMMON, ilvl = 40, armor = 117, stamina = 10, agility = 18),
-            source = "Leatherworking",
-        ),
-        ItemOption(
             Item(id = 29098, name = "Stag-Helm of Malorne", icon = "inv_helmet_15", quality = ItemQuality.EPIC, ilvl = 120, stamina = 30, agility = 33, strength = 41, armor = 490, socketTypes = listOf(GemColor.META, GemColor.YELLOW), setId = 640),
             source = "T4 - Prince Malchezaar",
         ),
@@ -38,19 +40,23 @@ object ItemDatabase {
             source = "T5 - Lady Vashj",
         ),
         ItemOption(
-            Item(id = 31039, name = "Thunderheart Cover", icon = "inv_helmet_50", quality = ItemQuality.EPIC, ilvl = 146, stamina = 67, agility = 42, strength = 28, armor = 392, defenseRating = 29, dodgeRating = 23, socketTypes = listOf(GemColor.META, GemColor.RED), setId = 652),
+            Item(id = 31039, name = "Thunderheart Cover", icon = "inv_helmet_94", quality = ItemQuality.EPIC, ilvl = 146, stamina = 67, agility = 42, strength = 28, armor = 392, defenseRating = 29, dodgeRating = 23, socketTypes = listOf(GemColor.META, GemColor.RED), setId = 652),
             source = "T6 - Archimonde",
         ),
         ItemOption(
-            Item(id = 32235, name = "Cursed Vision of Sargeras", icon = "inv_helmet_91", quality = ItemQuality.EPIC, ilvl = 151, stamina = 52, agility = 52, armor = 296, hitRating = 21, expertiseRating = 24),
+            Item(id = 32235, name = "Cursed Vision of Sargeras", icon = "inv_misc_bandana_03", quality = ItemQuality.EPIC, ilvl = 151, stamina = 52, agility = 52, armor = 296, hitRating = 21, expertiseRating = 24),
             source = "Illidan Stormrage",
         ),
     )
 
     private val neckItems = listOf(
         ItemOption(
-            Item(id = 29381, name = "Braided Eternium Chain", icon = "inv_jewelry_necklace_34", quality = ItemQuality.EPIC, ilvl = 115, stamina = 24, agility = 21, defenseRating = 17),
-            source = "Gruul's Lair",
+            Item(id = 28509, name = "Worgen Claw Necklace", icon = "inv_jewelry_necklace_22", quality = ItemQuality.EPIC, ilvl = 115, stamina = 21, agility = 20, hitRating = 17, attackPower = 42),
+            source = "Karazhan - Attumen",
+        ),
+        ItemOption(
+            Item(id = 29381, name = "Choker of Vile Intent", icon = "inv_jewelry_necklace_04", quality = ItemQuality.EPIC, ilvl = 110, stamina = 18, agility = 20, hitRating = 18, attackPower = 42),
+            source = "Badge of Justice (25)",
         ),
         ItemOption(
             Item(id = 30022, name = "Pendant of the Perilous", icon = "inv_jewelry_necklace_36", quality = ItemQuality.EPIC, ilvl = 128, stamina = 33, agility = 24, dodgeRating = 20),
@@ -82,6 +88,10 @@ object ItemDatabase {
     )
 
     private val backItems = listOf(
+        ItemOption(
+            Item(id = 28660, name = "Gilded Thorium Cloak", icon = "inv_misc_cape_20", quality = ItemQuality.EPIC, ilvl = 115, stamina = 30, armor = 385, defenseRating = 24),
+            source = "Karazhan - Illhoof",
+        ),
         ItemOption(
             Item(id = 28672, name = "Drape of the Dark Reavers", icon = "inv_misc_cape_naxxramas_03", quality = ItemQuality.EPIC, ilvl = 115, stamina = 28, agility = 22, armor = 86),
             source = "Karazhan - Shade of Aran",
@@ -121,6 +131,14 @@ object ItemDatabase {
 
     private val wristItems = listOf(
         ItemOption(
+            Item(id = 29263, name = "Forestheart Bracers", icon = "inv_bracer_02", quality = ItemQuality.EPIC, ilvl = 110, stamina = 27, agility = 18, strength = 18, armor = 237),
+            source = "Shattered Halls",
+        ),
+        ItemOption(
+            Item(id = 28445, name = "General's Dragonhide Bracers", icon = "inv_bracer_07", quality = ItemQuality.EPIC, ilvl = 113, stamina = 22, agility = 13, strength = 16, armor = 213, resilienceRating = 11, socketTypes = listOf(GemColor.RED)),
+            source = "PvP",
+        ),
+        ItemOption(
             Item(id = 29246, name = "Nightfall Wristguards", icon = "inv_bracer_07", quality = ItemQuality.EPIC, ilvl = 115, stamina = 22, agility = 22, armor = 164, dodgeRating = 13),
             source = "Karazhan - Nightbane",
         ),
@@ -154,6 +172,14 @@ object ItemDatabase {
     )
 
     private val waistItems = listOf(
+        ItemOption(
+            Item(id = 29264, name = "Tree-Mender's Belt", icon = "inv_belt_22", quality = ItemQuality.EPIC, ilvl = 110, stamina = 22, agility = 27, strength = 27, armor = 406),
+            source = "Shattered Halls",
+        ),
+        ItemOption(
+            Item(id = 28828, name = "Gronn-Stitched Girdle", icon = "inv_belt_26", quality = ItemQuality.EPIC, ilvl = 125, stamina = 27, armor = 222, critRating = 25, attackPower = 72, socketTypes = listOf(GemColor.BLUE, GemColor.YELLOW)),
+            source = "Gruul's Lair",
+        ),
         ItemOption(
             Item(id = 28750, name = "Girdle of Treachery", icon = "inv_belt_24", quality = ItemQuality.EPIC, ilvl = 115, stamina = 28, agility = 30, armor = 226, critRating = 22),
             source = "Karazhan - Moroes",
@@ -212,12 +238,12 @@ object ItemDatabase {
 
     private val ringItems = listOf(
         ItemOption(
-            Item(id = 28792, name = "Ring of the Stalwart Protector", icon = "inv_jewelry_ring_62", quality = ItemQuality.EPIC, ilvl = 115, stamina = 27, defenseRating = 20, dodgeRating = 18),
-            source = "Gruul's Lair",
+            Item(id = 29279, name = "Violet Signet of the Great Protector", icon = "inv_jewelry_ring_62", quality = ItemQuality.EPIC, ilvl = 130, stamina = 37, armor = 392, defenseRating = 19),
+            source = "Karazhan Rep - Exalted",
         ),
         ItemOption(
-            Item(id = 29279, name = "Band of the Eternal Champion", icon = "inv_jewelry_ring_55", quality = ItemQuality.EPIC, ilvl = 115, stamina = 19, agility = 25, hitRating = 15),
-            source = "Karazhan - Prince Malchezaar",
+            Item(id = 28792, name = "A'dal's Signet of Defense", icon = "inv_jewelry_ring_55", quality = ItemQuality.EPIC, ilvl = 125, stamina = 34, armor = 367, defenseRating = 20),
+            source = "Magtheridon Quest",
         ),
         ItemOption(
             Item(id = 30834, name = "Shapeshifter's Signet", icon = "inv_jewelry_ring_62", quality = ItemQuality.EPIC, ilvl = 128, stamina = 33, agility = 24, dodgeRating = 22),
@@ -249,6 +275,14 @@ object ItemDatabase {
         ItemOption(
             Item(id = 29370, name = "Badge of Tenacity", icon = "inv_jewelry_talisman_08", quality = ItemQuality.EPIC, ilvl = 110, agility = 28, stamina = 0, defenseRating = 0, dodgeRating = 0),
             source = "Blade's Edge Ogri'la",
+        ),
+        ItemOption(
+            Item(id = 28830, name = "Dragonspine Trophy", icon = "inv_misc_bone_03", quality = ItemQuality.EPIC, ilvl = 125, attackPower = 40),
+            source = "Gruul's Lair",
+        ),
+        ItemOption(
+            Item(id = 29383, name = "Bloodlust Brooch", icon = "inv_misc_monsterscales_15", quality = ItemQuality.EPIC, ilvl = 110, attackPower = 72),
+            source = "Badge of Justice (41)",
         ),
         ItemOption(
             Item(id = 30629, name = "Scarab of Displacement", icon = "inv_misc_gem_variety_01", quality = ItemQuality.EPIC, ilvl = 128, dodgeRating = 38),
@@ -284,6 +318,10 @@ object ItemDatabase {
     )
 
     private val idolItems = listOf(
+        ItemOption(
+            Item(id = 23198, name = "Idol of Brutality", icon = "inv_relics_idolofferocity", quality = ItemQuality.RARE, ilvl = 65, armor = 0),
+            source = "Stratholme",
+        ),
         ItemOption(
             Item(id = 28372, name = "Idol of the Wild", icon = "inv_relics_idolofrejuvenation", quality = ItemQuality.RARE, ilvl = 100, armor = 0, agility = 0),
             source = "Sethekk Halls",

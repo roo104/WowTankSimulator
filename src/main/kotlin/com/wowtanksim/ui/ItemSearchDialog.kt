@@ -54,6 +54,9 @@ fun ItemSearchDialog(
     var gemIdTexts by remember { mutableStateOf(listOf<String>()) }
     var gemLoading by remember { mutableStateOf(false) }
 
+    // Tier filter state
+    var selectedTier by remember { mutableStateOf<ContentTier?>(null) }
+
     // Wowhead search state
     var wowheadResults by remember { mutableStateOf<List<WowheadSearchResult>>(emptyList()) }
     var wowheadSearching by remember { mutableStateOf(false) }
@@ -112,8 +115,22 @@ fun ItemSearchDialog(
                         modifier = Modifier.fillMaxWidth(),
                     )
 
-                    val filteredItems = if (searchQuery.isBlank()) databaseItems
-                    else databaseItems.filter { it.item.name.contains(searchQuery, ignoreCase = true) || it.source.contains(searchQuery, ignoreCase = true) }
+                    // Tier filter chips
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("Tier:", style = MaterialTheme.typography.labelSmall, color = AppColors.inactive)
+                        ContentTier.entries.forEach { tier ->
+                            FilterChip(
+                                selected = selectedTier == tier,
+                                onClick = { selectedTier = if (selectedTier == tier) null else tier },
+                                label = { Text(tier.displayName, style = MaterialTheme.typography.labelSmall) },
+                                modifier = Modifier.height(28.dp),
+                            )
+                        }
+                    }
+
+                    val tierFiltered = if (selectedTier != null) databaseItems.filter { it.item.ilvl <= selectedTier!!.maxIlvl } else databaseItems
+                    val filteredItems = if (searchQuery.isBlank()) tierFiltered
+                    else tierFiltered.filter { it.item.name.contains(searchQuery, ignoreCase = true) || it.source.contains(searchQuery, ignoreCase = true) }
 
                     // Filter out Wowhead results that are already in the local DB
                     val localItemIds = filteredItems.map { it.item.id }.toSet()
