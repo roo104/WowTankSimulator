@@ -74,15 +74,15 @@ object ItemDatabase {
 
     private val shoulderItems = listOf(
         ItemOption(
-            Item(id = 29100, name = "Shoulderguards of Malorne", icon = "inv_shoulder_25", quality = ItemQuality.EPIC, ilvl = 120, stamina = 25, agility = 27, strength = 33, armor = 410, socketTypes = listOf(GemColor.BLUE, GemColor.BLUE), setId = 640),
+            Item(id = 29100, name = "Shoulderguards of Malorne", icon = "inv_shoulder_14", quality = ItemQuality.EPIC, ilvl = 120, stamina = 25, agility = 27, strength = 33, armor = 410, socketTypes = listOf(GemColor.BLUE, GemColor.BLUE), setId = 640),
             source = "T4 - High King Maulgar",
         ),
         ItemOption(
-            Item(id = 30230, name = "Nordrassil Feral-Mantle", icon = "inv_shoulder_25", quality = ItemQuality.EPIC, ilvl = 133, stamina = 42, agility = 28, strength = 18, armor = 336, defenseRating = 22, socketTypes = listOf(GemColor.RED, GemColor.YELLOW), setId = 651),
+            Item(id = 30230, name = "Nordrassil Feral-Mantle", icon = "inv_shoulder_14", quality = ItemQuality.EPIC, ilvl = 133, stamina = 42, agility = 28, strength = 18, armor = 336, defenseRating = 22, socketTypes = listOf(GemColor.RED, GemColor.YELLOW), setId = 651),
             source = "T5 - Void Reaver",
         ),
         ItemOption(
-            Item(id = 31048, name = "Thunderheart Pauldrons", icon = "inv_shoulder_52", quality = ItemQuality.EPIC, ilvl = 146, stamina = 48, agility = 36, strength = 26, armor = 363, defenseRating = 21, dodgeRating = 19, socketTypes = listOf(GemColor.YELLOW, GemColor.BLUE), setId = 652),
+            Item(id = 31048, name = "Thunderheart Pauldrons", icon = "inv_shoulder_58", quality = ItemQuality.EPIC, ilvl = 146, stamina = 48, agility = 36, strength = 26, armor = 363, defenseRating = 21, dodgeRating = 19, socketTypes = listOf(GemColor.YELLOW, GemColor.BLUE), setId = 652),
             source = "T6 - Mother Shahraz",
         ),
     )

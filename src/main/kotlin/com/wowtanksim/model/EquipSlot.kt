@@ -1,5 +1,8 @@
 package com.wowtanksim.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class EquipSlot(val displayName: String, val isArmor: Boolean = false) {
     HEAD("Head", isArmor = true),
     NECK("Neck"),

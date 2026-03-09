@@ -29,6 +29,7 @@ fun ItemSearchDialog(
     currentItem: Item?,
     onDismiss: () -> Unit,
     onItemSelected: (EquipSlot, Item) -> Unit,
+    showEnchantsAndGems: Boolean = true,
 ) {
     var fetchedItem by remember { mutableStateOf<Item?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -272,7 +273,7 @@ fun ItemSearchDialog(
                             if (item.attackPower > 0) Text("Attack Power: ${item.attackPower}", style = MaterialTheme.typography.bodySmall)
 
                             // Socket display with gem dropdowns
-                            if (item.numSockets > 0) {
+                            if (showEnchantsAndGems && item.numSockets > 0) {
                                 Divider(modifier = Modifier.padding(vertical = 4.dp))
                                 Text("Sockets", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                                 for (i in item.socketTypes.indices) {
@@ -420,7 +421,7 @@ fun ItemSearchDialog(
                             }
 
                             // Enchant section
-                            if (slotHasEnchants || useManualEnchant) {
+                            if (showEnchantsAndGems && (slotHasEnchants || useManualEnchant)) {
                                 Divider(modifier = Modifier.padding(vertical = 4.dp))
                                 Text("Enchant", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
 
@@ -519,7 +520,7 @@ fun ItemSearchDialog(
                             }
 
                             // Stat diff vs current
-                            if (currentItem != null) {
+                            if (showEnchantsAndGems && currentItem != null) {
                                 Divider(modifier = Modifier.padding(vertical = 4.dp))
                                 Text("Stat Difference:", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                                 showDiff("Stamina", item.stamina - currentItem.stamina)

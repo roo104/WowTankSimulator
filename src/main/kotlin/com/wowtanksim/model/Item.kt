@@ -1,7 +1,9 @@
 package com.wowtanksim.model
 
 import androidx.compose.ui.graphics.Color
+import kotlinx.serialization.Serializable
 
+@Serializable
 enum class ItemQuality(val color: Color) {
     POOR(Color(0xFF9D9D9D)),        // Grey
     COMMON(Color(0xFFFFFFFF)),      // White

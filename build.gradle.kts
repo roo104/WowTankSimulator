@@ -10,6 +10,7 @@ version = "1.0.0"
 dependencies {
     implementation(compose.desktop.currentOs)
     implementation(compose.material3)
+    implementation(compose.materialIconsExtended)
 
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)
