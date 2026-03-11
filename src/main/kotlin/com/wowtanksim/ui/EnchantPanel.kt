@@ -13,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.wowtanksim.model.*
@@ -182,25 +181,17 @@ private fun SlotEnchantSection(
 
     AnimatedVisibility(visible = expanded) {
         Column(modifier = Modifier.padding(start = 28.dp, top = 2.dp, bottom = 6.dp)) {
-            if (!hasItem) {
+            if (options.isEmpty()) {
                 Text(
-                    "Equip an item first",
+                    "No enchants available",
                     style = MaterialTheme.typography.bodySmall,
-                    fontStyle = FontStyle.Italic,
                     color = AppColors.inactive,
                     modifier = Modifier.padding(vertical = 4.dp),
                 )
             } else {
-                if (options.isEmpty()) {
-                    Text(
-                        "No enchants available",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.inactive,
-                        modifier = Modifier.padding(vertical = 4.dp),
-                    )
-                } else {
-                    // "None" option to remove enchant
-                    val currentEnchant = item!!.enchant
+                val currentEnchant = item?.enchant
+                if (hasItem) {
+                    // "None" option to remove enchant (only when item equipped)
                     EnchantRow(
                         name = "None",
                         statSummary = "",
@@ -209,20 +200,20 @@ private fun SlotEnchantSection(
                         enabled = true,
                         onClick = { onSelectEnchant(null) },
                     )
+                }
 
-                    for (option in options) {
-                        val isSelected = currentEnchant?.id == option.enchant.id
-                        EnchantRow(
-                            name = option.enchant.name,
-                            statSummary = option.enchant.statSummary(),
-                            note = option.note,
-                            source = option.source,
-                            materials = option.materials,
-                            isSelected = isSelected,
-                            enabled = true,
-                            onClick = { onSelectEnchant(option.enchant) },
-                        )
-                    }
+                for (option in options) {
+                    val isSelected = hasItem && currentEnchant?.id == option.enchant.id
+                    EnchantRow(
+                        name = option.enchant.name,
+                        statSummary = option.enchant.statSummary(),
+                        note = option.note,
+                        source = option.source,
+                        materials = option.materials,
+                        isSelected = isSelected,
+                        enabled = hasItem,
+                        onClick = { if (hasItem) onSelectEnchant(option.enchant) },
+                    )
                 }
             }
         }
