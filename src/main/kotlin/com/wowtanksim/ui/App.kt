@@ -2,6 +2,7 @@ package com.wowtanksim.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Stars
@@ -110,6 +111,7 @@ fun App() {
                 // Tab row
                 val tabs = listOf(
                     "Equipment" to Icons.Default.Shield,
+                    "Enchants" to Icons.Default.AutoFixHigh,
                     "Talents" to Icons.Default.Stars,
                     "Wish List" to Icons.Default.Checklist,
                 )
@@ -188,6 +190,17 @@ fun App() {
                         }
                     }
                     1 -> {
+                        // Enchants tab
+                        EnchantPanel(
+                            equipment = character.equipment,
+                            onApplyEnchant = { slot, enchant ->
+                                val currentItem = character.equipment[slot] ?: return@EnchantPanel
+                                character = character.withItem(slot, currentItem.copy(enchant = enchant))
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    2 -> {
                         // Talents tab
                         TalentTreePanel(
                             talentState = character.talents,
@@ -197,7 +210,7 @@ fun App() {
                             modifier = Modifier.weight(1f),
                         )
                     }
-                    2 -> {
+                    3 -> {
                         // Wish List tab
                         WishListPanel(modifier = Modifier.weight(1f))
                     }

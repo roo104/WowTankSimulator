@@ -17,4 +17,13 @@ data class Enchant(
     val attackPower: Int = 0,
     val critRating: Int = 0,
     val hasteRating: Int = 0,
+    val spellPower: Int = 0,
+    val healingPower: Int = 0,
+    val mp5: Int = 0,
+    val spellHitRating: Int = 0,
+    val spellCritRating: Int = 0,
+    val spellPenetration: Int = 0,
+    val parryRating: Int = 0,
+    val blockRating: Int = 0,
+    val blockValue: Int = 0,
 )
