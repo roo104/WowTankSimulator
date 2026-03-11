@@ -52,6 +52,7 @@ fun GemPanel(
 ) {
     var hideUncommon by remember { mutableStateOf(false) }
     var hideCommon by remember { mutableStateOf(true) }
+    var heroicOnly by remember { mutableStateOf(false) }
     val selectedColors = remember { mutableStateMapOf<GemColor, Boolean>() }
     val selectedStats = remember { mutableStateMapOf<GemStat, Boolean>() }
     val expandedSections = remember { mutableStateMapOf<GemSection, Boolean>() }
@@ -121,6 +122,19 @@ fun GemPanel(
                         modifier = Modifier.clickable { hideUncommon = !hideUncommon },
                     )
                 }
+
+                // Heroic drops filter
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = heroicOnly,
+                        onCheckedChange = { heroicOnly = it },
+                    )
+                    Text(
+                        "Heroic drops",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.clickable { heroicOnly = !heroicOnly },
+                    )
+                }
             }
 
             // Stat filters
@@ -149,6 +163,7 @@ fun GemPanel(
                         var filtered = list
                         if (hideCommon) filtered = filtered.filter { it.quality != GemQuality.COMMON }
                         if (hideUncommon) filtered = filtered.filter { it.quality != GemQuality.UNCOMMON }
+                        if (heroicOnly) filtered = filtered.filter { it.heroicDrop }
                         if (activeStats.isNotEmpty()) filtered = filtered.filter { opt ->
                             activeStats.any { stat -> stat.matches(opt.gem) }
                         }
@@ -172,7 +187,7 @@ fun GemPanel(
                     )
 
                     AnimatedVisibility(visible = expanded) {
-                        Column(modifier = Modifier.padding(start = 28.dp, top = 2.dp, bottom = 6.dp)) {
+                        Column(modifier = Modifier.padding(start = 24.dp, top = 2.dp, bottom = 4.dp)) {
                             for (option in sectionGems) {
                                 GemRow(option = option)
                             }
@@ -272,44 +287,46 @@ private fun GemRow(option: GemOption) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 3.dp, horizontal = 4.dp),
+            .padding(vertical = 2.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        // Col 1: Icon + Name
+        // Col 1: Icon + Name (takes remaining space)
         Row(
             modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (gem.iconUrl.isNotBlank()) {
-                IconImage(url = gem.iconUrl, size = 20.dp)
+                IconImage(url = gem.iconUrl, size = 18.dp)
             } else {
-                Spacer(Modifier.size(20.dp))
+                Spacer(Modifier.size(18.dp))
             }
-            Spacer(Modifier.width(6.dp))
+            Spacer(Modifier.width(4.dp))
             SelectionContainer {
                 Text(
                     gem.name,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
                 )
             }
         }
-        // Col 2: Stats
+        // Col 2: Stats (wrap content)
         Text(
             option.note ?: "",
             style = MaterialTheme.typography.bodySmall,
             color = AppColors.statSummary,
-            modifier = Modifier.weight(0.7f),
             maxLines = 1,
         )
-        // Col 3: Source
-        Text(
-            if (option.source != "Jewelcrafting") option.source else "",
-            style = MaterialTheme.typography.bodySmall,
-            color = AppColors.slotLabel,
-            modifier = Modifier.weight(0.5f),
-            maxLines = 1,
-        )
+        // Col 3: Source (wrap content)
+        val sourceText = if (option.source != "Jewelcrafting") option.source else ""
+        if (sourceText.isNotEmpty()) {
+            Text(
+                sourceText,
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.slotLabel,
+                maxLines = 1,
+            )
+        }
     }
 }
 
