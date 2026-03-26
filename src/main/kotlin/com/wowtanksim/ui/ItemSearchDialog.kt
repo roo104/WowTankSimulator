@@ -602,7 +602,7 @@ private fun ItemDatabaseRow(option: ItemOption, onClick: () -> Unit) {
                 color = AppColors.tooltipBackground,
                 shadowElevation = 4.dp,
             ) {
-                Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp).widthIn(max = 300.dp)) {
                     Text(
                         item.name,
                         style = MaterialTheme.typography.bodyMedium,

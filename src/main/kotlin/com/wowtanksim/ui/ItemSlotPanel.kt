@@ -187,7 +187,7 @@ private fun SlotRow(
                     color = AppColors.tooltipBackground,
                     shadowElevation = 4.dp,
                 ) {
-                    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+                    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp).widthIn(max = 300.dp)) {
                         Text(
                             item.name,
                             style = MaterialTheme.typography.bodyMedium,
@@ -210,8 +210,15 @@ private fun SlotRow(
                             )
                         }
                         item.enchant?.let { ench ->
+                            val enchantText = buildString {
+                                append(ench.name)
+                                val summary = ench.statSummary()
+                                if (summary.isNotEmpty()) {
+                                    append(" ($summary)")
+                                }
+                            }
                             Text(
-                                ench.name,
+                                enchantText,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = AppColors.enchantGreen,
                             )

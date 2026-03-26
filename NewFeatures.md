@@ -2,3 +2,4 @@
 * Make it possible to import from a file, use a json format.
 * Make it possible to export to a file, use a json format.
 * Compile into an exe or something that can easily de run on windows
+* When missing def or resi, suggest items from the database that will add def or resi.
