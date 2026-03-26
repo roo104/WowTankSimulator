@@ -1,13 +1,14 @@
 package com.wowtanksim.ui
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -16,10 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import com.wowtanksim.model.EquipSlot
-import com.wowtanksim.model.Gem
-import com.wowtanksim.model.GemColor
-import com.wowtanksim.model.Item
+import com.wowtanksim.model.*
 import com.wowtanksim.service.SetBonusService
 import com.wowtanksim.service.SetBonusStat
 
@@ -48,6 +46,8 @@ fun ItemSlotPanel(
     setBonuses: List<SetBonusStat> = emptyList(),
     onSlotClick: (EquipSlot) -> Unit,
     onRemoveItem: (EquipSlot) -> Unit,
+    onChangeEnchant: (EquipSlot, Enchant?) -> Unit = { _, _ -> },
+    onChangeGem: (EquipSlot, Int, Gem?) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     Card(modifier = modifier.fillMaxHeight()) {
@@ -77,7 +77,7 @@ fun ItemSlotPanel(
                     }
                     items(group.slots) { slot ->
                         val item = equipment[slot]
-                        SlotRow(slot, item, equipment, setBonuses, onSlotClick, onRemoveItem)
+                        SlotRow(slot, item, equipment, setBonuses, onSlotClick, onRemoveItem, onChangeEnchant, onChangeGem)
                     }
                 }
             }
@@ -94,7 +94,12 @@ private fun SlotRow(
     setBonuses: List<SetBonusStat>,
     onSlotClick: (EquipSlot) -> Unit,
     onRemoveItem: (EquipSlot) -> Unit,
+    onChangeEnchant: (EquipSlot, Enchant?) -> Unit,
+    onChangeGem: (EquipSlot, Int, Gem?) -> Unit,
 ) {
+    var showEnchantMenu by remember { mutableStateOf(false) }
+    var showGemMenu by remember { mutableStateOf<Int?>(null) }
+
     val rowContent: @Composable () -> Unit = {
     Row(
         modifier = Modifier
@@ -123,17 +128,61 @@ private fun SlotRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                // Enchant name
-                item.enchant?.let { ench ->
-                    Text(
-                        ench.name,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.enchantGreen,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                // Enchant name (clickable)
+                val enchantOptions = EnchantData.enchantOptionsForSlot(slot)
+                if (enchantOptions.isNotEmpty()) {
+                    Box {
+                        Text(
+                            item.enchant?.name ?: "Add enchant...",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (item.enchant != null) AppColors.enchantGreen else AppColors.emptySlot,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                            ) { showEnchantMenu = true },
+                        )
+                        DropdownMenu(
+                            expanded = showEnchantMenu,
+                            onDismissRequest = { showEnchantMenu = false },
+                            modifier = Modifier.heightIn(max = 300.dp),
+                        ) {
+                            if (item.enchant != null) {
+                                DropdownMenuItem(
+                                    text = { Text("Remove Enchant", color = AppColors.removeButton, style = MaterialTheme.typography.bodySmall) },
+                                    onClick = { onChangeEnchant(slot, null); showEnchantMenu = false },
+                                )
+                                Divider()
+                            }
+                            enchantOptions.forEach { opt ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Column {
+                                            Text(opt.enchant.name, style = MaterialTheme.typography.bodySmall, color = AppColors.enchantGreen)
+                                            val summary = opt.enchant.statSummary()
+                                            if (summary.isNotEmpty()) {
+                                                Text(summary, style = MaterialTheme.typography.bodySmall, color = AppColors.statSummary)
+                                            }
+                                        }
+                                    },
+                                    onClick = { onChangeEnchant(slot, opt.enchant); showEnchantMenu = false },
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    item.enchant?.let { ench ->
+                        Text(
+                            ench.name,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColors.enchantGreen,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
-                // Gem sockets
+                // Gem sockets (clickable)
                 if (item.gems.isNotEmpty() || item.socketTypes.isNotEmpty()) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -143,17 +192,54 @@ private fun SlotRow(
                             else item.gems.map { it?.color ?: GemColor.RED }
                         for ((i, socketColor) in sockets.withIndex()) {
                             val gem = item.gems.getOrNull(i)
-                            if (gem != null && gem.iconUrl.isNotBlank()) {
-                                GemWithTooltip(gem) {
-                                    IconImage(url = gem.iconUrl, size = 16.dp)
+                            Box {
+                                if (gem != null && gem.iconUrl.isNotBlank()) {
+                                    GemWithTooltip(gem) {
+                                        Box(modifier = Modifier.clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null,
+                                        ) { showGemMenu = i }) {
+                                            IconImage(url = gem.iconUrl, size = 16.dp)
+                                        }
+                                    }
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(16.dp)
+                                            .clip(CircleShape)
+                                            .background(AppColors.gemSocketColor(socketColor).copy(alpha = 0.3f))
+                                            .clickable(
+                                                interactionSource = remember { MutableInteractionSource() },
+                                                indication = null,
+                                            ) { showGemMenu = i }
+                                    )
                                 }
-                            } else {
-                                Box(
-                                    modifier = Modifier
-                                        .size(16.dp)
-                                        .clip(CircleShape)
-                                        .background(AppColors.gemSocketColor(socketColor).copy(alpha = 0.3f))
-                                )
+                                DropdownMenu(
+                                    expanded = showGemMenu == i,
+                                    onDismissRequest = { showGemMenu = null },
+                                    modifier = Modifier.heightIn(max = 300.dp),
+                                ) {
+                                    if (gem != null) {
+                                        DropdownMenuItem(
+                                            text = { Text("Remove Gem", color = AppColors.removeButton, style = MaterialTheme.typography.bodySmall) },
+                                            onClick = { onChangeGem(slot, i, null); showGemMenu = null },
+                                        )
+                                        Divider()
+                                    }
+                                    GemData.gemOptionsForColor(socketColor).forEach { opt ->
+                                        DropdownMenuItem(
+                                            text = {
+                                                Column {
+                                                    Text(opt.gem.name, style = MaterialTheme.typography.bodySmall, color = Color.White)
+                                                    opt.note?.let {
+                                                        Text(it, style = MaterialTheme.typography.bodySmall, color = AppColors.statSummary)
+                                                    }
+                                                }
+                                            },
+                                            onClick = { onChangeGem(slot, i, opt.gem); showGemMenu = null },
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

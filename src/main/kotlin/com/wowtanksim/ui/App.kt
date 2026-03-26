@@ -144,6 +144,17 @@ fun App() {
                                 onRemoveItem = { slot ->
                                     character = character.withoutItem(slot)
                                 },
+                                onChangeEnchant = { slot, enchant ->
+                                    val item = character.equipment[slot] ?: return@ItemSlotPanel
+                                    character = character.withItem(slot, item.copy(enchant = enchant))
+                                },
+                                onChangeGem = { slot, index, gem ->
+                                    val item = character.equipment[slot] ?: return@ItemSlotPanel
+                                    val newGems = item.gems.toMutableList()
+                                    while (newGems.size <= index) newGems.add(null)
+                                    newGems[index] = gem
+                                    character = character.withItem(slot, item.copy(gems = newGems))
+                                },
                                 modifier = Modifier.weight(1f),
                             )
 
