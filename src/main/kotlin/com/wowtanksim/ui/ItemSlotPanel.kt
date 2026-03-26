@@ -99,6 +99,7 @@ private fun SlotRow(
 ) {
     var showEnchantMenu by remember { mutableStateOf(false) }
     var showGemMenu by remember { mutableStateOf<Int?>(null) }
+    var isHoveringGem by remember { mutableStateOf(false) }
 
     val rowContent: @Composable () -> Unit = {
     Row(
@@ -184,9 +185,19 @@ private fun SlotRow(
                 }
                 // Gem sockets (clickable)
                 if (item.gems.isNotEmpty() || item.socketTypes.isNotEmpty()) {
+                    val gemHoverSource = remember { MutableInteractionSource() }
+                    LaunchedEffect(gemHoverSource) {
+                        gemHoverSource.interactions.collect { interaction ->
+                            when (interaction) {
+                                is androidx.compose.foundation.interaction.HoverInteraction.Enter -> isHoveringGem = true
+                                is androidx.compose.foundation.interaction.HoverInteraction.Exit -> isHoveringGem = false
+                            }
+                        }
+                    }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        modifier = Modifier.hoverable(gemHoverSource),
                     ) {
                         val sockets = if (item.socketTypes.isNotEmpty()) item.socketTypes
                             else item.gems.map { it?.color ?: GemColor.RED }
@@ -267,6 +278,7 @@ private fun SlotRow(
     if (item != null) {
         TooltipArea(
             tooltip = {
+                if (!isHoveringGem) {
                 Surface(
                     modifier = Modifier.wrapContentSize(),
                     shape = RoundedCornerShape(4.dp),
@@ -343,6 +355,7 @@ private fun SlotRow(
                         }
                     }
                 }
+                } // if (!isHoveringGem)
             },
             delayMillis = 300,
             tooltipPlacement = TooltipPlacement.CursorPoint(offset = DpOffset(0.dp, 16.dp)),

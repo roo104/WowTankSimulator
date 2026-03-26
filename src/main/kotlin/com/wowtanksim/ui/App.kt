@@ -96,6 +96,14 @@ fun App() {
                         enabled = importStep == ImportStep.IDLE && importRealm.isNotBlank() && importName.isNotBlank(),
                         modifier = Modifier.padding(top = 8.dp),
                     ) {
+                        if (importStep != ImportStep.IDLE) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                            )
+                            Spacer(Modifier.width(8.dp))
+                        }
                         Text(importStep.label)
                     }
                     importError?.let {
